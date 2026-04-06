@@ -1,0 +1,5 @@
+{
+  "name": "MedBusca",
+  "description": "Sistema de consulta e gestão de especialidades médicas em UPAs de Salvador.",
+  "requestFramePermissions": ["geolocation"]
+}
