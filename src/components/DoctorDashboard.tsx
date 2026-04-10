@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { 
-  Clock, 
-  Play, 
-  Pause, 
-  Square, 
+import {
+  Clock,
+  Play,
+  Pause,
+  Square,
   RotateCcw,
   Stethoscope,
   Building2,
@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import DashboardHeader from './DashboardHeader';
+import { turnosApi } from '../services/api';
+import { useApp } from '../store/AppContext';
 
 interface DoctorDashboardProps {
   userName: string;
@@ -31,9 +33,35 @@ interface HistoryEntry {
 export default function DoctorDashboard({ userName, onLogout, systemName, systemLogo }: DoctorDashboardProps) {
   const [status, setStatus] = useState<ShiftStatus>('not_started');
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [medico, setMedico] = useState<any>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+  const { usuario, logout } = useApp();
+
+  const API_STATUS: Record<string, ShiftStatus> = {
+    em_atendimento: 'in_service',
+    em_pausa: 'on_break',
+    encerrado: 'ended',
+    nao_iniciado: 'not_started',
+  };
 
   useEffect(() => {
+    turnosApi.meu().then(data => {
+      setMedico(data.medico);
+      if (data.turno) {
+        setStatus(API_STATUS[data.turno.status] || 'not_started');
+      }
+      if (data.historico) {
+        setHistory(data.historico.map((r: any) => ({
+          time: new Date(r.registrado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          action: r.acao === 'inicio' ? 'Início do turno'
+            : r.acao === 'pausa' ? 'Pausa'
+            : r.acao === 'retorno' ? 'Retorno'
+            : 'Encerramento',
+        })));
+      }
+    }).catch(() => {});
+
     const timer = setInterval(() => {
       setCurrentTime(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
     }, 60000);
@@ -45,24 +73,49 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
     setHistory(prev => [{ time: now, action }, ...prev]);
   };
 
-  const handleStart = () => {
-    setStatus('in_service');
-    addHistory('Início do turno');
+  const handleStart = async () => {
+    setIsActionLoading(true);
+    try {
+      await turnosApi.iniciar();
+      setStatus('in_service');
+      addHistory('Início do turno');
+    } catch (e: any) { alert(e.message); }
+    finally { setIsActionLoading(false); }
   };
 
-  const handlePause = () => {
-    setStatus('on_break');
-    addHistory('Pausa');
+  const handlePause = async () => {
+    setIsActionLoading(true);
+    try {
+      await turnosApi.pausar();
+      setStatus('on_break');
+      addHistory('Pausa');
+    } catch (e: any) { alert(e.message); }
+    finally { setIsActionLoading(false); }
   };
 
-  const handleReturn = () => {
-    setStatus('in_service');
-    addHistory('Retorno');
+  const handleReturn = async () => {
+    setIsActionLoading(true);
+    try {
+      await turnosApi.retornar();
+      setStatus('in_service');
+      addHistory('Retorno');
+    } catch (e: any) { alert(e.message); }
+    finally { setIsActionLoading(false); }
   };
 
-  const handleEnd = () => {
-    setStatus('ended');
-    addHistory('Encerramento');
+  const handleEnd = async () => {
+    setIsActionLoading(true);
+    try {
+      await turnosApi.encerrar();
+      setStatus('ended');
+      addHistory('Encerramento');
+    } catch (e: any) { alert(e.message); }
+    finally { setIsActionLoading(false); }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    onLogout();
   };
 
   const getStatusConfig = () => {
@@ -82,11 +135,11 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
 
   return (
     <div className="min-h-screen bg-slate-50 pb-10">
-      <DashboardHeader 
-        userName={userName}
+      <DashboardHeader
+        userName={medico?.nome || userName}
         roleName="Médico"
-        subInfo="CRM: 12345-BA"
-        onLogout={onLogout}
+        subInfo={`CRM: ${medico?.crm || '---'}`}
+        onLogout={handleLogout}
         systemName={systemName}
         systemLogo={systemLogo}
       />

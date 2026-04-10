@@ -4,6 +4,8 @@
  */
 
 import { useState } from 'react';
+import { useApp } from './store/AppContext';
+import AtivarConta from './components/AtivarConta';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
@@ -80,7 +82,20 @@ const MOCK_MUNICIPALITIES = [
 ];
 
 export default function App() {
+  const { usuario } = useApp();
+  // Detecta link de ativação de conta (?token=xxx)
+  const tokenAtivacao = new URLSearchParams(window.location.search).get('token');
+  if (tokenAtivacao) {
+    return (
+      <AtivarConta
+        token={tokenAtivacao}
+        onSuccess={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }}
+      />
+    );
+  }
+
   const [currentView, setCurrentView] = useState<View>('landing');
+  const [selectedMunicipio, setSelectedMunicipio] = useState<any>(null);
   const [systemConfig, setSystemConfig] = useState({
     name: 'MedBusca',
     logo: '',
@@ -143,7 +158,10 @@ export default function App() {
     setCurrentView('landing');
   };
 
-  const handleNavigate = (screen: string) => {
+  const handleNavigate = (screen: string, data?: any) => {
+    if (screen === 'list_municipal_managers' && data) {
+      setSelectedMunicipio(data);
+    }
     setCurrentView(screen);
   };
 
@@ -179,8 +197,8 @@ export default function App() {
       )}
 
       {currentView === 'admin' && (
-        <SuperAdminDashboard 
-          userName="Antônio Maia"
+        <SuperAdminDashboard
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
           onNavigate={handleNavigate}
           systemName={systemConfig.name}
@@ -189,9 +207,9 @@ export default function App() {
       )}
 
       {currentView === 'manager' && (
-        <MunicipalManagerDashboard 
-          userName="Ricardo Oliveira"
-          cityName={systemConfig.municipality}
+        <MunicipalManagerDashboard
+          userName={usuario?.nome ?? ''}
+          cityName={usuario?.municipio_nome ?? systemConfig.municipality}
           onLogout={handleBack}
           onNavigate={handleNavigate}
           systemName={systemConfig.name}
@@ -200,9 +218,9 @@ export default function App() {
       )}
 
       {currentView === 'upa_manager_dashboard' && (
-        <UPAManagerDashboard 
-          userName="Carlos Oliveira"
-          upaName="UPA 24h Hélio Machado"
+        <UPAManagerDashboard
+          userName={usuario?.nome ?? ''}
+          upaName={usuario?.upa_nome ?? ''}
           onLogout={handleBack}
           onNavigate={handleNavigate}
           systemName={systemConfig.name}
@@ -214,16 +232,29 @@ export default function App() {
         <MunicipalityRegistration 
           onBack={() => setCurrentView('admin')}
           onSuccess={() => setCurrentView('admin')}
-          userName="Antônio Maia"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
         />
       )}
 
       {currentView === 'list_municipalities' && (
-        <MunicipalityList 
+        <MunicipalityList
           onBack={() => setCurrentView('admin')}
           onAdd={() => setCurrentView('register_municipality')}
-          userName="Antônio Maia"
+          onSelect={(m) => { setSelectedMunicipio(m); setCurrentView('list_municipal_managers'); }}
+          userName={usuario?.nome ?? ''}
+          onLogout={handleBack}
+        />
+      )}
+
+      {currentView === 'list_municipal_managers' && (
+        <ManagerList
+          type="municipal"
+          municipioId={selectedMunicipio?.id}
+          municipioNome={selectedMunicipio?.nome}
+          onBack={() => setCurrentView('list_municipalities')}
+          onAdd={() => setCurrentView('register_municipal_manager')}
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
         />
       )}
@@ -232,7 +263,7 @@ export default function App() {
         <UPARegistration 
           onBack={() => setCurrentView('manager')}
           onSuccess={() => setCurrentView('manager')}
-          userName="Ricardo Oliveira"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
         />
       )}
@@ -242,7 +273,7 @@ export default function App() {
           onBack={() => setCurrentView('manager')}
           onAdd={() => setCurrentView('register_upa')}
           onSelect={(id) => setCurrentView('upa_manager_dashboard')}
-          userName="Ricardo Oliveira"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
         />
       )}
@@ -253,7 +284,7 @@ export default function App() {
           type="municipal"
           onBack={() => setCurrentView('admin')}
           onSuccess={() => setCurrentView('admin')}
-          userName="Antônio Maia"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
         />
       )}
@@ -264,7 +295,7 @@ export default function App() {
           type="upa"
           onBack={() => setCurrentView('manager')}
           onSuccess={() => setCurrentView('manager')}
-          userName="Ricardo Oliveira"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
         />
       )}
@@ -273,14 +304,14 @@ export default function App() {
         <ManagerList 
           onBack={() => setCurrentView('manager')}
           onAdd={() => setCurrentView('register_upa_manager')}
-          userName="Ricardo Oliveira"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
         />
       )}
 
       {currentView === 'reports' && (
         <ReportsDashboard 
-          userName="Carlos Oliveira"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
           onBack={() => setCurrentView('upa_manager_dashboard')}
         />
@@ -290,9 +321,9 @@ export default function App() {
         <DoctorRegistration 
           onBack={() => setCurrentView('upa_manager_dashboard')}
           onSuccess={() => setCurrentView('list_doctors')}
-          userName="Carlos Oliveira"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
-          upaName="UPA 24h Hélio Machado"
+          upaName={usuario?.upa_nome ?? ''}
         />
       )}
 
@@ -301,9 +332,9 @@ export default function App() {
           onBack={() => setCurrentView('upa_manager_dashboard')}
           onAdd={() => setCurrentView('register_doctor')}
           onSelect={(id) => setCurrentView(`doctor_detail_${id}`)}
-          userName="Carlos Oliveira"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
-          upaName="UPA 24h Hélio Machado"
+          upaName={usuario?.upa_nome ?? ''}
         />
       )}
 
@@ -311,9 +342,9 @@ export default function App() {
         <ScheduleRegistration 
           onBack={() => setCurrentView('upa_manager_dashboard')}
           onSuccess={() => setCurrentView('list_schedules')}
-          userName="Carlos Oliveira"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
-          upaName="UPA 24h Hélio Machado"
+          upaName={usuario?.upa_nome ?? ''}
         />
       )}
 
@@ -321,24 +352,24 @@ export default function App() {
         <ScheduleList 
           onBack={() => setCurrentView('upa_manager_dashboard')}
           onAdd={() => setCurrentView('register_schedule')}
-          userName="Carlos Oliveira"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
-          upaName="UPA 24h Hélio Machado"
+          upaName={usuario?.upa_nome ?? ''}
         />
       )}
 
       {currentView === 'monitor_shifts' && (
         <ShiftMonitoring 
           onBack={() => setCurrentView('upa_manager_dashboard')}
-          userName="Carlos Oliveira"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
-          upaName="UPA 24h Hélio Machado"
+          upaName={usuario?.upa_nome ?? ''}
         />
       )}
       
       {currentView === 'doctor' && (
         <DoctorDashboard 
-          userName="Antônio Maia"
+          userName={usuario?.nome ?? ''}
           onLogout={handleBack}
           systemName={systemConfig.name}
           systemLogo={systemConfig.logo}
@@ -346,7 +377,7 @@ export default function App() {
       )}
 
       {/* Dynamic Placeholder for remaining sub-screens */}
-      {typeof currentView === 'string' && !['landing', 'citizen', 'login', 'doctor', 'manager', 'admin', 'register_municipality', 'list_municipalities', 'register_upa', 'list_upa', 'register_municipal_manager', 'register_upa_manager', 'list_manager', 'reports', 'upa_manager_dashboard', 'register_doctor', 'list_doctors', 'register_schedule', 'list_schedules', 'monitor_shifts'].includes(currentView) && (
+      {typeof currentView === 'string' && !['landing', 'citizen', 'login', 'doctor', 'manager', 'admin', 'register_municipality', 'list_municipalities', 'list_municipal_managers', 'register_upa', 'list_upa', 'register_municipal_manager', 'register_upa_manager', 'list_manager', 'reports', 'upa_manager_dashboard', 'register_doctor', 'list_doctors', 'register_schedule', 'list_schedules', 'monitor_shifts'].includes(currentView) && (
         <PlaceholderPage 
           title={`Tela: ${currentView.replace('_', ' ').toUpperCase()}`} 
           userName={

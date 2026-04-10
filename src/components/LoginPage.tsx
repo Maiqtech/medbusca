@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Search, ArrowLeft, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useApp } from '../store/AppContext';
 
 interface LoginPageProps {
   onBack: () => void;
@@ -15,6 +16,14 @@ export default function LoginPage({ onBack, onLoginSuccess, systemName = "MedBus
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { login, usuario } = useApp();
+
+  const PERFIL_PARA_VIEW: Record<string, string> = {
+    medico: 'doctor',
+    gestor_municipal: 'manager',
+    gestor_upa: 'upa_manager_dashboard',
+    super_admin: 'admin',
+  };
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -26,20 +35,18 @@ export default function LoginPage({ onBack, onLoginSuccess, systemName = "MedBus
     }
 
     setIsLoading(true);
-
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    if (email === 'medico@teste.com') {
-      onLoginSuccess('doctor');
-    } else if (email === 'gestor@teste.com') {
-      onLoginSuccess('manager');
-    } else if (email === 'upa@teste.com') {
-      onLoginSuccess('upa_manager_dashboard');
-    } else if (email === 'superadmin@teste.com') {
-      onLoginSuccess('admin');
-    } else {
-      setError('Credenciais inválidas. Verifique seu email e senha.');
+    try {
+      await login(email, password);
+      // Determina view baseado no perfil do usuário — disponível no context após login
+      const token = localStorage.getItem('medbusca_access_token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const view = PERFIL_PARA_VIEW[payload.perfil] || 'landing';
+        onLoginSuccess(view);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Credenciais inválidas. Verifique seu email e senha.');
+    } finally {
       setIsLoading(false);
     }
   };

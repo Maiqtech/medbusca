@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Plus, Search, User, ChevronRight, Stethoscope, Mail, Phone, MoreVertical, Filter } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Search, User, ChevronRight, Stethoscope, Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import DashboardHeader from './DashboardHeader';
+import { medicosApi } from '../services/api';
+import { useApp } from '../store/AppContext';
 
 interface DoctorListProps {
   onBack: () => void;
@@ -12,33 +14,40 @@ interface DoctorListProps {
   upaName: string;
 }
 
-const MOCK_DOCTORS = [
-  { id: '1', name: 'Dr. João Silva', specialty: 'Ortopedia', crm: '12345-BA', email: 'joao@email.com', phone: '(71) 98888-7777', status: 'Ativo' },
-  { id: '2', name: 'Dra. Maria Souza', specialty: 'Pediatria', crm: '23456-BA', email: 'maria@email.com', phone: '(71) 98888-6666', status: 'Ativo' },
-  { id: '3', name: 'Dr. Carlos Lima', specialty: 'Clínico Geral', crm: '34567-BA', email: 'carlos@email.com', phone: '(71) 98888-5555', status: 'Ativo' },
-  { id: '4', name: 'Dra. Ana Paula', specialty: 'Ginecologia', crm: '45678-BA', email: 'ana@email.com', phone: '(71) 98888-4444', status: 'Inativo' },
-  { id: '5', name: 'Dr. Roberto Santos', specialty: 'Cardiologia', crm: '56789-BA', email: 'roberto@email.com', phone: '(71) 98888-3333', status: 'Ativo' },
-];
+const statusColor = (status: string) => {
+  if (status === 'em_atendimento') return 'bg-green-100 text-green-600';
+  if (status === 'em_pausa') return 'bg-amber-100 text-amber-600';
+  return 'bg-slate-100 text-slate-500';
+};
+const statusLabel = (status: string) => {
+  if (status === 'em_atendimento') return 'Em atendimento';
+  if (status === 'em_pausa') return 'Em pausa';
+  return 'Offline';
+};
 
-export default function DoctorList({ 
-  onBack, 
-  onAdd, 
-  onSelect, 
-  userName,
-  onLogout,
-  upaName
-}: DoctorListProps) {
+export default function DoctorList({ onBack, onAdd, onSelect, userName, onLogout, upaName }: DoctorListProps) {
+  const { usuario } = useApp();
+  const [medicos, setMedicos] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
-  const filteredDoctors = MOCK_DOCTORS.filter(doc => 
-    doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.crm.includes(searchTerm)
+  useEffect(() => {
+    medicosApi.listar(usuario?.upa_id ? { upa_id: usuario.upa_id } : {})
+      .then(setMedicos)
+      .catch(() => setErro('Erro ao carregar médicos.'))
+      .finally(() => setIsLoading(false));
+  }, [usuario]);
+
+  const filtered = medicos.filter(m =>
+    m.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    m.especialidade_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    m.crm.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      <DashboardHeader 
+    <div className="min-h-screen bg-slate-50 pb-10">
+      <DashboardHeader
         userName={userName}
         roleName="Gestor de UPA"
         subInfo={upaName}
@@ -46,111 +55,83 @@ export default function DoctorList({
         onBack={onBack}
       />
 
-      <main className="p-4 max-w-5xl mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Equipe Médica</h2>
-            <p className="text-slate-500 text-sm font-medium">Gerencie o corpo clínico da unidade</p>
-          </div>
-          <button 
+      <main className="p-6 max-w-4xl mx-auto space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Médicos da Unidade</h2>
+          <button
             onClick={onAdd}
-            className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95"
+            className="p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-2 w-full sm:w-auto justify-center"
           >
             <Plus size={20} />
-            Novo Médico
+            <span className="font-bold text-sm">Novo Médico</span>
           </button>
         </div>
 
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-              type="text"
-              placeholder="Buscar por nome, CRM ou especialidade..."
-              className="w-full pl-12 pr-5 py-4 bg-white border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <input
+            type="text"
+            placeholder="Buscar por nome, CRM ou especialidade..."
+            className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {erro && (
+          <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-700 text-sm font-medium">
+            <AlertCircle size={18} className="shrink-0" />{erro}
           </div>
-          <button className="p-4 bg-white border border-slate-100 rounded-2xl text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
-            <Filter size={20} />
-          </button>
-        </div>
+        )}
 
-        <div className="grid grid-cols-1 gap-3">
-          {filteredDoctors.map((doc) => (
-            <motion.div 
-              key={doc.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm hover:border-blue-200 transition-all group"
-            >
-              <div className="flex items-start justify-between">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20 gap-3 text-slate-400">
+            <Loader2 size={24} className="animate-spin" />
+            <span className="font-medium">Carregando médicos...</span>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 text-slate-400">
+            <User size={48} className="mx-auto mb-4 opacity-30" />
+            <p className="font-bold text-lg">Nenhum médico encontrado</p>
+            <p className="text-sm mt-1">Cadastre o primeiro médico clicando em "Novo Médico".</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((doc, index) => (
+              <motion.div
+                key={doc.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                onClick={() => onSelect(String(doc.id))}
+                className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group flex items-center justify-between cursor-pointer"
+              >
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                    <User size={28} />
+                  <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400">
+                    <User size={24} />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-slate-800">{doc.name}</h3>
-                      <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${
-                        doc.status === 'Ativo' ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-400'
-                      }`}>
-                        {doc.status}
+                    <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{doc.nome}</h3>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                      <span className="text-[10px] text-slate-400 flex items-center gap-1 uppercase font-bold tracking-wider">
+                        <Stethoscope size={10} />{doc.especialidade_nome}
                       </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1">
-                      <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        <Stethoscope size={12} />
-                        {doc.specialty}
-                      </div>
-                      <div className="w-1 h-1 bg-slate-200 rounded-full" />
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        CRM: {doc.crm}
-                      </div>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                        CRM {doc.crm}
+                      </span>
                     </div>
                   </div>
                 </div>
-                <button className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 transition-colors">
-                  <MoreVertical size={20} />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5 pt-5 border-t border-slate-50">
-                <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                  <Mail size={14} className="text-slate-300" />
-                  {doc.email}
+                <div className="flex items-center gap-3">
+                  <span className={`hidden sm:block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusColor(doc.status_turno)}`}>
+                    {statusLabel(doc.status_turno)}
+                  </span>
+                  <ChevronRight className="text-slate-300 group-hover:text-blue-500 transition-colors" size={20} />
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                  <Phone size={14} className="text-slate-300" />
-                  {doc.phone}
-                </div>
-              </div>
-
-              <div className="mt-5 flex gap-2">
-                <button 
-                  onClick={() => onSelect(doc.id)}
-                  className="flex-1 py-3 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-blue-50 hover:text-blue-600 transition-all"
-                >
-                  Ver Perfil Completo
-                </button>
-                <button className="px-6 py-3 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all">
-                  Escalas
-                </button>
-              </div>
-            </motion.div>
-          ))}
-
-          {filteredDoctors.length === 0 && (
-            <div className="text-center py-12 bg-white rounded-[2.5rem] border border-dashed border-slate-200">
-              <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search size={32} />
-              </div>
-              <p className="text-slate-500 font-bold">Nenhum médico encontrado</p>
-              <p className="text-slate-400 text-xs mt-1">Tente buscar por outro termo ou cadastre um novo profissional</p>
-            </div>
-          )}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
