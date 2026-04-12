@@ -6,7 +6,7 @@ Completar o 20% restante do sistema MedBusca para entrega do TCC em Junho 2026. 
 
 ## Phases
 
-- [ ] **Phase 1: Recuperação de Senha** - Fluxo completo de "esqueci minha senha" no backend e frontend
+- [x] **Phase 1: Recuperação de Senha** - Fluxo completo de "esqueci minha senha" no backend e frontend (completed 2026-04-12)
 - [ ] **Phase 2: Alertas Automáticos** - Django signals e commands para gerar alertas sem intervenção manual
 - [ ] **Phase 3: Polling em Tempo Real** - Atualização automática do portal do cidadão e dashboards
 - [ ] **Phase 4: Relatórios e Refinamentos** - Relatórios conectados à API real e ajustes finais
@@ -25,8 +25,8 @@ Completar o 20% restante do sistema MedBusca para entrega do TCC em Junho 2026. 
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Backend — endpoints esqueci-senha e redefinir-senha com token de 1h
-- [ ] 01-02: Frontend — tela de solicitação, tela de nova senha e link na LoginPage
+- [x] 01-01: Backend — endpoints esqueci-senha e redefinir-senha com token de 1h
+- [x] 01-02: Frontend — tela de solicitação, tela de nova senha e link na LoginPage
 
 ### Phase 2: Alertas Automáticos
 **Goal**: Sistema gera alertas críticos automaticamente quando situações de risco ocorrem nas UPAs.
@@ -77,7 +77,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Recuperação de Senha | 0/2 | Not started | - |
+| 1. Recuperação de Senha | 2/2 | Complete   | 2026-04-12 |
 | 2. Alertas Automáticos | 0/3 | Not started | - |
 | 3. Polling em Tempo Real | 0/2 | Not started | - |
 | 4. Relatórios e Refinamentos | 0/2 | Not started | - |
