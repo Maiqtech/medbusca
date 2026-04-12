@@ -1,4 +1,5 @@
-const BASE_URL = 'http://localhost:8000/api';
+declare const __API_URL__: string;
+const BASE_URL = __API_URL__;
 
 // ─── Token management ─────────────────────────────────────────────────────────
 export function getAccessToken() {
