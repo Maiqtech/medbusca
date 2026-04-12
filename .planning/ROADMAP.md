@@ -1,58 +1,83 @@
-# Roadmap — MedBusca Milestone 1 (Fase Final TCC)
+# Roadmap: MedBusca
 
-## Objetivo
-Completar o 20% restante do sistema para entrega do TCC em Junho 2026.
+## Overview
 
----
+Completar o 20% restante do sistema MedBusca para entrega do TCC em Junho 2026. O sistema já possui autenticação, CRUD completo, gestão de turnos e portal do cidadão. Este milestone implementa recuperação de senha, alertas automáticos, polling em tempo real e relatórios conectados à API real.
 
-## Fase 1 — Recuperação de Senha
-**Goal:** Usuários conseguem redefinir senha sem intervenção de admin.
+## Phases
 
-### Planos
-- **1.1** Backend: endpoints `esqueci-senha` e `redefinir-senha` com token de 1 hora
-- **1.2** Frontend: tela de solicitação + tela de nova senha + link na LoginPage
+- [ ] **Phase 1: Recuperação de Senha** - Fluxo completo de "esqueci minha senha" no backend e frontend
+- [ ] **Phase 2: Alertas Automáticos** - Django signals e commands para gerar alertas sem intervenção manual
+- [ ] **Phase 3: Polling em Tempo Real** - Atualização automática do portal do cidadão e dashboards
+- [ ] **Phase 4: Relatórios e Refinamentos** - Relatórios conectados à API real e ajustes finais
 
-**Verificação:** Usuário consegue solicitar, receber email, clicar no link e definir nova senha. Login funciona após redefinição.
+## Phase Details
 
----
+### Phase 1: Recuperação de Senha
+**Goal**: Usuários conseguem redefinir senha sem intervenção de admin.
+**Depends on**: Nothing (first phase)
+**Requirements**: R1
+**Success Criteria** (what must be TRUE):
+  1. Usuário solicita redefinição via email e recebe o link
+  2. Link abre tela de nova senha e permite salvar
+  3. Login funciona normalmente após redefinição
+  4. Token expirado ou já usado retorna erro claro
+**Plans**: 2 plans
 
-## Fase 2 — Alertas Automáticos
-**Goal:** Sistema gera alertas sem intervenção manual quando situações críticas ocorrem.
+Plans:
+- [ ] 01-01: Backend — endpoints esqueci-senha e redefinir-senha com token de 1h
+- [ ] 01-02: Frontend — tela de solicitação, tela de nova senha e link na LoginPage
 
-### Planos
-- **2.1** Backend signals: alerta ao encerrar turno sem cobertura + auto-resolução ao iniciar turno
-- **2.2** Backend command: `verificar_turnos_nao_iniciados` (verificação horária)
-- **2.3** Backend: alertas municipais (UPA sem gestor) e globais (município sem gestor)
+### Phase 2: Alertas Automáticos
+**Goal**: Sistema gera alertas críticos automaticamente quando situações de risco ocorrem nas UPAs.
+**Depends on**: Phase 1
+**Requirements**: R2
+**Success Criteria** (what must be TRUE):
+  1. Encerrar turno do único médico de uma especialidade gera alerta crítico para gestor de UPA
+  2. Iniciar turno resolve automaticamente o alerta de cobertura
+  3. Turno previsto não iniciado gera alerta após horário de início
+  4. UPA sem gestor gera alerta para gestor municipal
+**Plans**: 3 plans
 
-**Verificação:** Encerrar turno do único médico de uma especialidade gera alerta crítico no dashboard do gestor. Iniciar turno resolve o alerta.
+Plans:
+- [ ] 02-01: Django signals — alerta ao encerrar turno sem cobertura e auto-resolução ao iniciar turno
+- [ ] 02-02: Management command verificar_turnos_nao_iniciados para alertas de não comparecimento
+- [ ] 02-03: Alertas municipais e globais — UPA sem gestor, município sem gestor
 
----
+### Phase 3: Polling em Tempo Real
+**Goal**: Portal do cidadão e dashboards refletem mudanças de status automaticamente sem reload.
+**Depends on**: Phase 2
+**Requirements**: R3
+**Success Criteria** (what must be TRUE):
+  1. Portal do cidadão atualiza status das UPAs a cada 10 segundos automaticamente
+  2. Dashboard do médico atualiza status do turno a cada 15 segundos
+  3. Dashboard gestor de UPA atualiza lista de médicos a cada 15 segundos
+  4. Indicador de "última atualização" visível nos dashboards
+**Plans**: 2 plans
 
-## Fase 3 — Polling em Tempo Real
-**Goal:** Portal do cidadão e dashboards refletem mudanças de status sem recarregar a página.
+Plans:
+- [ ] 03-01: Portal do cidadão — polling 10s com indicador de última atualização
+- [ ] 03-02: Dashboard médico e gestor de UPA — polling 15s com indicador visual
 
-### Planos
-- **3.1** Portal do cidadão: polling 10s + indicador "atualizado há X segundos"
-- **3.2** Dashboard médico + gestor de UPA: polling 15s + badge de última atualização
+### Phase 4: Relatórios e Refinamentos
+**Goal**: Relatórios exibem dados reais da API e sistema está pronto para entrega do TCC.
+**Depends on**: Phase 3
+**Requirements**: R4
+**Success Criteria** (what must be TRUE):
+  1. ReportsDashboard exibe dados reais com filtro por mês funcionando
+  2. Gestor municipal visualiza relatório consolidado do município
+  3. Todos os 5 perfis completam seus fluxos principais sem erro
+**Plans**: 2 plans
 
-**Verificação:** Médico faz check-in e em até 15 segundos o portal do cidadão mostra "Disponível agora" sem reload manual.
+Plans:
+- [ ] 04-01: Frontend — conectar ReportsDashboard e relatório municipal à API real
+- [ ] 04-02: Refinamentos — revisão geral, correção de bugs, testes dos fluxos principais
 
----
+## Progress
 
-## Fase 4 — Relatórios e Refinamentos
-**Goal:** Relatórios exibem dados reais da API. Sistema pronto para entrega.
-
-### Planos
-- **4.1** Frontend: conectar `ReportsDashboard` ao endpoint real de relatórios de UPA
-- **4.2** Frontend: relatório municipal no dashboard do gestor municipal
-- **4.3** Refinamentos: revisar alertas no frontend, testar fluxo completo, corrigir bugs encontrados
-
-**Verificação:** Relatório de UPA exibe dados reais com filtro por mês funcionando. Todos os 5 perfis conseguem completar seus fluxos principais sem erro.
-
----
-
-## Sequência recomendada
-```
-Fase 1 → Fase 2 → Fase 3 → Fase 4
-```
-Fases 2 e 3 podem ser trabalhadas em paralelo após Fase 1.
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Recuperação de Senha | 0/2 | Not started | - |
+| 2. Alertas Automáticos | 0/3 | Not started | - |
+| 3. Polling em Tempo Real | 0/2 | Not started | - |
+| 4. Relatórios e Refinamentos | 0/2 | Not started | - |
