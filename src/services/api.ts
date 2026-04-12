@@ -187,3 +187,18 @@ export const usuariosApi = {
   criar: (data: any) => apiFetch<any>('/usuarios/', { method: 'POST', body: JSON.stringify(data) }),
   desativar: (id: number | string) => apiFetch<any>(`/usuarios/${id}/desativar/`, { method: 'PUT' }),
 };
+
+// ─── Senha ────────────────────────────────────────────────────────────────────
+export const passwordApi = {
+  esqueciSenha: (email: string) =>
+    apiFetch<{ mensagem: string }>('/auth/esqueci-senha/', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  redefinirSenha: (reset_token: string, nova_senha: string) =>
+    apiFetch<{ mensagem: string }>('/auth/redefinir-senha/', {
+      method: 'POST',
+      body: JSON.stringify({ token: reset_token, nova_senha }),
+    }),
+};
