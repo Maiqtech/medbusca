@@ -7,7 +7,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import Alerta, Escala, Especialidade, Medico, Municipio, RegistroTurno, TokenAtivacao, Turno, UPA, Usuario
+from .models import Alerta, Escala, Especialidade, Medico, Municipio, RegistroTurno, TokenAtivacao, TokenRedefinicaoSenha, Turno, UPA, Usuario
 from .permissions import IsGestorMunicipal, IsGestorUPA, IsMedico, IsSuperAdmin
 from .serializers import (
     AlertaSerializer, EscalaSerializer, EspecialidadeSerializer,
@@ -392,6 +392,54 @@ def ativar_conta(request):
     t.usado = True
     t.save()
     return Response({'mensagem': 'Senha criada com sucesso! Você já pode fazer login.'})
+
+
+# ─── Recuperação de Senha ─────────────────────────────────────────────────────
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def esqueci_senha(request):
+    """Gera token de redefinição e envia email. Resposta sempre 200 (não vaza existência do email)."""
+    from .email_service import enviar_email_redefinicao_senha
+    email = request.data.get('email', '').strip().lower()
+    if not email:
+        return Response({'erro': 'Email é obrigatório.'}, status=400)
+    try:
+        usuario = Usuario.objects.get(email=email, is_active=True)
+    except Usuario.DoesNotExist:
+        # Retorna 200 mesmo assim — não revela se o email existe
+        return Response({'mensagem': 'Se este email estiver cadastrado, você receberá um link em breve.'})
+    # Invalida tokens anteriores não usados do mesmo usuário
+    TokenRedefinicaoSenha.objects.filter(usuario=usuario, usado=False).update(usado=True)
+    token_str = secrets.token_urlsafe(48)
+    TokenRedefinicaoSenha.objects.create(
+        usuario=usuario,
+        token=token_str,
+        expira_em=timezone.now() + timedelta(hours=1),
+    )
+    enviar_email_redefinicao_senha(usuario.nome, usuario.email, token_str)
+    return Response({'mensagem': 'Se este email estiver cadastrado, você receberá um link em breve.'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def redefinir_senha(request):
+    token_str = request.data.get('token', '').strip()
+    nova_senha = request.data.get('nova_senha', '')
+    if not token_str or not nova_senha:
+        return Response({'erro': 'Token e nova senha são obrigatórios.'}, status=400)
+    if len(nova_senha) < 6:
+        return Response({'erro': 'A senha deve ter pelo menos 6 caracteres.'}, status=400)
+    try:
+        t = TokenRedefinicaoSenha.objects.get(token=token_str, usado=False)
+    except TokenRedefinicaoSenha.DoesNotExist:
+        return Response({'erro': 'Link inválido ou já utilizado.'}, status=400)
+    if timezone.now() > t.expira_em:
+        return Response({'erro': 'Este link expirou. Solicite um novo.'}, status=400)
+    t.usuario.set_password(nova_senha)
+    t.usuario.save()
+    t.usado = True
+    t.save()
+    return Response({'mensagem': 'Senha redefinida com sucesso! Você já pode fazer login.'})
 
 
 # ─── Usuários ─────────────────────────────────────────────────────────────────
