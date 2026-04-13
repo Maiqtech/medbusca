@@ -1,0 +1,7 @@
+{
+  "mode": "yolo",
+  "granularity": "standard",
+  "parallel": true,
+  "commit_docs": true,
+  "runtime": "claude"
+}
