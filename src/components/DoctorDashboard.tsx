@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Clock,
   Play,
@@ -36,6 +36,7 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
   const [medico, setMedico] = useState<any>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
   const { usuario, logout } = useApp();
 
   const API_STATUS: Record<string, ShiftStatus> = {
@@ -45,12 +46,11 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
     nao_iniciado: 'not_started',
   };
 
-  useEffect(() => {
-    turnosApi.meu().then(data => {
+  const fetchTurno = useCallback(async () => {
+    try {
+      const data = await turnosApi.meu();
       setMedico(data.medico);
-      if (data.turno) {
-        setStatus(API_STATUS[data.turno.status] || 'not_started');
-      }
+      if (data.turno) setStatus(API_STATUS[data.turno.status] || 'not_started');
       if (data.historico) {
         setHistory(data.historico.map((r: any) => ({
           time: new Date(r.registrado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
@@ -60,12 +60,23 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
             : 'Encerramento',
         })));
       }
-    }).catch(() => {});
+      setUltimaAtualizacao(new Date());
+    } catch {} // silencioso — não resetar dados em falha de polling
+  }, []);
 
-    const timer = setInterval(() => {
+  // useEffect 1: polling de dados (15s)
+  useEffect(() => {
+    fetchTurno(); // busca imediata no mount
+    const pollingTimer = setInterval(fetchTurno, 15_000);
+    return () => clearInterval(pollingTimer);
+  }, [fetchTurno]);
+
+  // useEffect 2: relógio (60s) — mantido separado para não interferir
+  useEffect(() => {
+    const clockTimer = setInterval(() => {
       setCurrentTime(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
-    }, 60000);
-    return () => clearInterval(timer);
+    }, 60_000);
+    return () => clearInterval(clockTimer);
   }, []);
 
   const addHistory = (action: string) => {
@@ -147,7 +158,14 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
       <main className="p-4 max-w-2xl mx-auto space-y-6">
         {/* Title Section */}
         <section className="mt-2">
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Meu Turno</h2>
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Meu Turno</h2>
+            {ultimaAtualizacao && (
+              <p className="text-[10px] text-slate-400 font-bold">
+                Atualizado às {ultimaAtualizacao.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+          </div>
           <p className="text-slate-500 text-sm font-medium">Controle seu atendimento na unidade</p>
         </section>
 
