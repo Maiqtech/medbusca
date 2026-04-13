@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import DashboardHeader from './DashboardHeader';
-import { medicosApi, alertasApi, turnosApi } from '../services/api';
+import { medicosApi, turnosApi } from '../services/api';
 import { useApp } from '../store/AppContext';
 
 interface UPAManagerDashboardProps {
@@ -28,13 +28,11 @@ export default function UPAManagerDashboard({ userName, upaName, onLogout, onNav
   const fetchDados = useCallback(async () => {
     const upaId = usuario?.upa_id;
     try {
-      const [m, a, t] = await Promise.all([
+      const [m, t] = await Promise.all([
         medicosApi.listar(upaId ? { upa_id: upaId } : {}),
-        alertasApi.listar(),
         turnosApi.listar(upaId ? { upa_id: upaId } : {}),
       ]);
       setMedicos(m);
-      setAlertas(a);
       setTurnos(t);
       setUltimaAtualizacao(new Date());
     } catch {} // silencioso — não limpar dados em falha de polling
