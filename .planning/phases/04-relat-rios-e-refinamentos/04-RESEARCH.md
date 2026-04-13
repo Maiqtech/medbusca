@@ -259,16 +259,16 @@ Step 2.5: SKIPPED — fase não é rename/refactor/migration. Sem state runtime 
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Gráfico de barras no `ReportsDashboard` deve usar dados reais?**
    - O que sabemos: atualmente usa alturas hardcoded `[60, 75, 80, 65, 90, 85, 40, 55, 70, 85, 95, 75]`
    - O que está indefinido: R4 menciona "horas trabalhadas por especialidade" e "taxa de disponibilidade" mas não especifica gráfico
-   - Recomendação: manter gráfico decorativo (12 barras animadas) sem dados reais — o valor está nas cards e na tabela. Implementar gráfico real introduziria complexidade desnecessária para TCC.
+   - RESOLVED: Manter gráfico decorativo (12 barras animadas) sem dados reais. O valor de R4 está nos cards e na tabela de detalhamento. Implementar gráfico real introduziria complexidade desnecessária fora do escopo do TCC.
 
 2. **`MunicipalManagerDashboard` deve exibir mais campos do payload municipal?**
    - O que sabemos: payload já retorna `total_upas`, `upas_ativas` mas o dashboard calcula esses valores a partir do array `upas`
-   - Recomendação: não alterar — o dashboard já mostra esses valores corretamente a partir de `upas.length` e `upas.filter(u => u.ativa).length`. Consistência é mais valiosa que uma refatoração sem ganho visual.
+   - RESOLVED: Não alterar. O dashboard já satisfaz o critério R4 ("Gestor municipal visualiza relatório consolidado do município") pois: (a) já chama `relatoriosApi.municipio()` com dados reais, (b) exibe `total_upas` via `upas.length`, `upas_ativas` via `upas.filter(u => u.ativa).length`, e `total_medicos` direto do payload. Refatorar para usar os campos do topo do payload (`total_upas`, `upas_ativas`) sem ganho visual não agrega valor.
 
 ---
 
