@@ -201,26 +201,3 @@ class TokenRedefinicaoSenha(models.Model):
 
     def __str__(self):
         return f'Redefinição de {self.usuario.email}'
-
-
-class Alerta(models.Model):
-    TIPO_CHOICES = [
-        ('critico', 'Crítico'),
-        ('aviso', 'Aviso'),
-        ('informativo', 'Informativo'),
-    ]
-
-    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
-    mensagem = models.TextField()
-    upa = models.ForeignKey(UPA, null=True, blank=True, on_delete=models.CASCADE, related_name='alertas')
-    municipio = models.ForeignKey(Municipio, null=True, blank=True, on_delete=models.CASCADE, related_name='alertas')
-    resolvido = models.BooleanField(default=False)
-    criado_em = models.DateTimeField(auto_now_add=True)
-    resolvido_em = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'alertas'
-        ordering = ['-criado_em']
-
-    def __str__(self):
-        return f'[{self.tipo}] {self.mensagem[:50]}'

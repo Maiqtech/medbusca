@@ -7,17 +7,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import Alerta, Escala, Especialidade, Medico, Municipio, RegistroTurno, TokenAtivacao, TokenRedefinicaoSenha, Turno, UPA, Usuario
+from .models import Escala, Especialidade, Medico, Municipio, RegistroTurno, TokenAtivacao, TokenRedefinicaoSenha, Turno, UPA, Usuario
 from .permissions import IsGestorMunicipal, IsGestorUPA, IsMedico, IsSuperAdmin
 from .serializers import (
-    AlertaSerializer, EscalaSerializer, EspecialidadeSerializer,
+    EscalaSerializer, EspecialidadeSerializer,
     MedBuscaTokenObtainPairSerializer, MedicoCriarSerializer, MedicoSerializer, MunicipioSerializer,
     TurnoSerializer, UPAPublicaSerializer, UPASerializer,
     UsuarioCriarSerializer, UsuarioSerializer,
-)
-from .management.commands.verificar_alertas_estruturais import (
-    verificar_alertas_upa,
-    verificar_alertas_municipio,
 )
 
 
@@ -204,17 +200,6 @@ def iniciar_turno(request):
         return Response({'erro': 'Já existe um turno em andamento.'}, status=400)
     turno = Turno.objects.create(medico=medico, status='em_atendimento')
     RegistroTurno.objects.create(turno=turno, acao='inicio')
-
-    # Auto-resolve: starting a shift restores coverage for this specialty
-    upa = medico.upa
-    especialidade = medico.especialidade
-    Alerta.objects.filter(
-        upa=upa,
-        tipo='critico',
-        resolvido=False,
-        mensagem__icontains=especialidade.nome,
-    ).update(resolvido=True, resolvido_em=timezone.now())
-
     return Response(TurnoSerializer(turno).data, status=201)
 
 
@@ -264,33 +249,6 @@ def encerrar_turno(request):
     turno.encerrado_em = timezone.now()
     turno.save()
     RegistroTurno.objects.create(turno=turno, acao='encerramento')
-
-    # Alert: check if specialty now has no coverage at this UPA
-    upa = medico.upa
-    especialidade = medico.especialidade
-    tem_cobertura = Turno.objects.filter(
-        medico__upa=upa,
-        medico__especialidade=especialidade,
-        status__in=['em_atendimento', 'em_pausa'],
-    ).exclude(medico=medico).exists()
-    if not tem_cobertura:
-        ja_existe = Alerta.objects.filter(
-            upa=upa,
-            tipo='critico',
-            resolvido=False,
-            mensagem__icontains=especialidade.nome,
-        ).exists()
-        if not ja_existe:
-            Alerta.objects.create(
-                tipo='critico',
-                mensagem=(
-                    f'Sem cobertura de {especialidade.nome} na UPA {upa.nome}. '
-                    'Nenhum médico da especialidade está em atendimento.'
-                ),
-                upa=upa,
-                municipio=upa.municipio,
-            )
-
     return Response(TurnoSerializer(turno).data)
 
 
@@ -307,34 +265,6 @@ def listar_turnos(request):
     if upa_id:
         qs = qs.filter(medico__upa_id=upa_id)
     return Response(TurnoSerializer(qs, many=True).data)
-
-
-# ─── Alertas ──────────────────────────────────────────────────────────────────
-class AlertaList(generics.ListAPIView):
-    serializer_class = AlertaSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        qs = Alerta.objects.filter(resolvido=False)
-        if user.perfil == 'gestor_upa':
-            qs = qs.filter(upa=user.upa)
-        elif user.perfil == 'gestor_municipal':
-            qs = qs.filter(municipio=user.municipio)
-        return qs
-
-
-@api_view(['PUT'])
-@permission_classes([IsAuthenticated])
-def resolver_alerta(request, pk):
-    try:
-        alerta = Alerta.objects.get(pk=pk)
-    except Alerta.DoesNotExist:
-        return Response({'erro': 'Alerta não encontrado.'}, status=404)
-    alerta.resolvido = True
-    alerta.resolvido_em = timezone.now()
-    alerta.save()
-    return Response(AlertaSerializer(alerta).data)
 
 
 # ─── Relatórios ───────────────────────────────────────────────────────────────
@@ -511,11 +441,6 @@ class UsuarioListCreate(generics.ListCreateAPIView):
         serializer = UsuarioCriarSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         usuario = serializer.save()
-        # Re-evaluate structural alerts after new user created
-        if usuario.perfil == 'gestor_upa' and usuario.upa_id:
-            verificar_alertas_upa(usuario.upa)
-        elif usuario.perfil == 'gestor_municipal' and usuario.municipio_id:
-            verificar_alertas_municipio(usuario.municipio)
         return Response(UsuarioSerializer(usuario).data, status=status.HTTP_201_CREATED)
 
 
@@ -530,9 +455,4 @@ def desativar_usuario(request, pk):
     # Libera o e-mail para reutilização futura
     usuario.email = f'__inativo_{usuario.pk}__{usuario.email}'
     usuario.save()
-    # Re-evaluate structural alerts after user deactivated
-    if usuario.perfil == 'gestor_upa' and usuario.upa_id:
-        verificar_alertas_upa(usuario.upa)
-    elif usuario.perfil == 'gestor_municipal' and usuario.municipio_id:
-        verificar_alertas_municipio(usuario.municipio)
     return Response({'mensagem': 'Usuário desativado.'})

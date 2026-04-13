@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Usuario, Municipio, Especialidade, UPA, Medico, Escala, Turno, RegistroTurno, Alerta
+from .models import Usuario, Municipio, Especialidade, UPA, Medico, Escala, Turno, RegistroTurno
 
 
 @admin.register(Usuario)
@@ -56,9 +56,3 @@ class EscalaAdmin(admin.ModelAdmin):
 class TurnoAdmin(admin.ModelAdmin):
     list_display = ['medico', 'status', 'iniciado_em', 'encerrado_em']
     list_filter = ['status']
-
-
-@admin.register(Alerta)
-class AlertaAdmin(admin.ModelAdmin):
-    list_display = ['tipo', 'mensagem', 'upa', 'municipio', 'resolvido', 'criado_em']
-    list_filter = ['tipo', 'resolvido']

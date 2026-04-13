@@ -39,10 +39,6 @@ urlpatterns = [
     path('turnos/retornar/', views.retornar_turno),
     path('turnos/encerrar/', views.encerrar_turno),
 
-    # Alertas
-    path('alertas/', views.AlertaList.as_view()),
-    path('alertas/<int:pk>/resolver/', views.resolver_alerta),
-
     # Relatórios
     path('relatorios/upa/<int:upa_id>/', views.relatorio_upa),
     path('relatorios/municipio/<int:municipio_id>/', views.relatorio_municipio),

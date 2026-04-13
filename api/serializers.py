@@ -4,7 +4,7 @@ from django.utils import timezone
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import TokenAtivacao, Usuario, Municipio, Especialidade, UPA, Medico, Escala, Turno, RegistroTurno, Alerta
+from .models import TokenAtivacao, Usuario, Municipio, Especialidade, UPA, Medico, Escala, Turno, RegistroTurno
 
 
 class MedBuscaTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -298,14 +298,3 @@ class TurnoSerializer(serializers.ModelSerializer):
         fields = ['id', 'medico', 'medico_nome', 'especialidade_nome',
                   'status', 'iniciado_em', 'encerrado_em', 'registros']
         read_only_fields = ['id', 'iniciado_em', 'encerrado_em', 'status']
-
-
-class AlertaSerializer(serializers.ModelSerializer):
-    upa_nome = serializers.CharField(source='upa.nome', read_only=True)
-    municipio_nome = serializers.CharField(source='municipio.nome', read_only=True)
-
-    class Meta:
-        model = Alerta
-        fields = ['id', 'tipo', 'mensagem', 'upa', 'upa_nome',
-                  'municipio', 'municipio_nome', 'resolvido', 'criado_em', 'resolvido_em']
-        read_only_fields = ['id', 'criado_em', 'resolvido_em']
