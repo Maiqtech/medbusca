@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, MapPin, Clock, ArrowLeft, Calendar, Info, ChevronRight, Stethoscope, AlertCircle, CheckCircle2, Navigation, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { municipiosApi, especialidadesApi, upasApi } from '../services/api';
@@ -21,6 +21,7 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
 
   useEffect(() => {
     Promise.all([municipiosApi.listar(), especialidadesApi.listar()])
@@ -52,6 +53,26 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
     }
   };
 
+  const refetchUPAs = useCallback(async () => {
+    if (!selectedEspecialidade || !selectedMunicipio) return;
+    try {
+      const upas = await upasApi.listar({
+        municipio_id: selectedMunicipio.id,
+        especialidade_id: selectedEspecialidade.id,
+      });
+      setResults(upas);
+      setUltimaAtualizacao(new Date());
+    } catch {
+      // silencioso — não resetar dados existentes em falha de polling
+    }
+  }, [selectedMunicipio?.id, selectedEspecialidade?.id]);
+
+  useEffect(() => {
+    if (!results) return;
+    const intervalo = setInterval(refetchUPAs, 10_000);
+    return () => clearInterval(intervalo);
+  }, [!!results, refetchUPAs]);
+
   const handleSearch = async () => {
     if (!selectedEspecialidade || !selectedMunicipio) return;
     setIsSearching(true);
@@ -62,6 +83,7 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
         especialidade_id: selectedEspecialidade.id,
       });
       setResults(upas);
+      setUltimaAtualizacao(new Date());
     } catch {
       setErro('Erro ao buscar UPAs. Tente novamente.');
     } finally {
@@ -215,6 +237,11 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
                   {results.length} Unidades
                 </span>
               </div>
+              {ultimaAtualizacao && (
+                <p className="text-[10px] text-slate-400 font-bold px-2">
+                  Atualizado às {ultimaAtualizacao.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              )}
 
               {results.length > 0 ? (
                 <div className="grid grid-cols-1 gap-3">
@@ -236,13 +263,27 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
                               {upa.bairro || upa.municipio_nome}
                             </div>
                           </div>
-                          <div className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 ${
-                            disponivel ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-400'
-                          }`}>
-                            {disponivel ? <CheckCircle2 size={14} /> : <Clock size={14} />}
-                            <span className="text-[10px] font-black uppercase tracking-wider">
-                              {disponivel ? 'Disponível agora' : 'Indisponível'}
-                            </span>
+                          <div className="flex items-center gap-2">
+                            {(upa.latitude && upa.longitude) && (
+                              <a
+                                href={`https://www.google.com/maps?q=${upa.latitude},${upa.longitude}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 px-2 py-1.5 rounded-xl bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                aria-label={`Ver ${upa.nome} no Google Maps`}
+                              >
+                                <Navigation size={14} />
+                                <span className="text-[10px] font-bold hidden sm:inline">Mapa</span>
+                              </a>
+                            )}
+                            <div className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 ${
+                              disponivel ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-400'
+                            }`}>
+                              {disponivel ? <CheckCircle2 size={14} /> : <Clock size={14} />}
+                              <span className="text-[10px] font-black uppercase tracking-wider">
+                                {disponivel ? 'Disponível agora' : 'Indisponível'}
+                              </span>
+                            </div>
                           </div>
                         </div>
 

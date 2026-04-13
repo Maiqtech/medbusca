@@ -92,6 +92,8 @@ describe('CitizenPortal — Polling', () => {
   });
 
   it('Test 2: cria setInterval de 10000ms após busca bem-sucedida (results !== null)', async () => {
+    // Only fake setInterval/clearInterval — leave Promise microtasks on real timers
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     mockUpasListar.mockResolvedValue([UPA_COM_COORDENADAS]);
 
     render(<CitizenPortal onBack={vi.fn()} />);
@@ -112,13 +114,12 @@ describe('CitizenPortal — Polling', () => {
 
     const callCountAfterSearch = mockUpasListar.mock.calls.length;
 
-    // Advance 10 seconds — polling should fire once more
+    // Advance 10 seconds — fake setInterval should fire refetchUPAs
     await act(async () => {
-      vi.useFakeTimers();
       await vi.advanceTimersByTimeAsync(10000);
     });
-    vi.useRealTimers();
 
+    vi.useRealTimers();
     expect(mockUpasListar.mock.calls.length).toBeGreaterThan(callCountAfterSearch);
   });
 
