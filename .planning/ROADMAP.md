@@ -56,8 +56,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: Portal do cidadão — polling 10s com indicador de última atualização
-- [ ] 03-02: Dashboard médico e gestor de UPA — polling 15s com indicador visual
+- [x] 03-01: Portal do cidadão — polling 10s com indicador de última atualização
+- [x] 03-02: Dashboard médico e gestor de UPA — polling 15s com indicador visual
 
 ### Phase 4: Relatórios e Refinamentos
 **Goal**: Relatórios exibem dados reais da API e sistema está pronto para entrega do TCC.
