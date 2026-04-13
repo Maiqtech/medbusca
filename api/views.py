@@ -200,6 +200,17 @@ def iniciar_turno(request):
         return Response({'erro': 'Já existe um turno em andamento.'}, status=400)
     turno = Turno.objects.create(medico=medico, status='em_atendimento')
     RegistroTurno.objects.create(turno=turno, acao='inicio')
+
+    # Auto-resolve: starting a shift restores coverage for this specialty
+    upa = medico.upa
+    especialidade = medico.especialidade
+    Alerta.objects.filter(
+        upa=upa,
+        tipo='critico',
+        resolvido=False,
+        mensagem__icontains=especialidade.nome,
+    ).update(resolvido=True, resolvido_em=timezone.now())
+
     return Response(TurnoSerializer(turno).data, status=201)
 
 
