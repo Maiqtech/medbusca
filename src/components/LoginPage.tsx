@@ -6,12 +6,11 @@ import { useApp } from '../store/AppContext';
 interface LoginPageProps {
   onBack: () => void;
   onLoginSuccess: (role: string) => void;
-  onEsqueciSenha?: () => void;
   systemName?: string;
   systemLogo?: string;
 }
 
-export default function LoginPage({ onBack, onLoginSuccess, onEsqueciSenha, systemName = "MedBusca", systemLogo }: LoginPageProps) {
+export default function LoginPage({ onBack, onLoginSuccess, systemName = "MedBusca", systemLogo }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -168,9 +167,8 @@ export default function LoginPage({ onBack, onLoginSuccess, onEsqueciSenha, syst
                 </button>
 
                 <div className="text-center">
-                  <button
+                  <button 
                     type="button"
-                    onClick={onEsqueciSenha}
                     className="text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors"
                   >
                     Esqueci minha senha

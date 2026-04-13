@@ -7,7 +7,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import Alerta, Escala, Especialidade, Medico, Municipio, RegistroTurno, TokenAtivacao, TokenRedefinicaoSenha, Turno, UPA, Usuario
+from .models import Alerta, Escala, Especialidade, Medico, Municipio, RegistroTurno, TokenAtivacao, Turno, UPA, Usuario
 from .permissions import IsGestorMunicipal, IsGestorUPA, IsMedico, IsSuperAdmin
 from .serializers import (
     AlertaSerializer, EscalaSerializer, EspecialidadeSerializer,
@@ -200,17 +200,6 @@ def iniciar_turno(request):
         return Response({'erro': 'Já existe um turno em andamento.'}, status=400)
     turno = Turno.objects.create(medico=medico, status='em_atendimento')
     RegistroTurno.objects.create(turno=turno, acao='inicio')
-
-    # Auto-resolve: starting a shift restores coverage for this specialty
-    upa = medico.upa
-    especialidade = medico.especialidade
-    Alerta.objects.filter(
-        upa=upa,
-        tipo='critico',
-        resolvido=False,
-        mensagem__icontains=especialidade.nome,
-    ).update(resolvido=True, resolvido_em=timezone.now())
-
     return Response(TurnoSerializer(turno).data, status=201)
 
 
@@ -260,33 +249,6 @@ def encerrar_turno(request):
     turno.encerrado_em = timezone.now()
     turno.save()
     RegistroTurno.objects.create(turno=turno, acao='encerramento')
-
-    # Alert: check if specialty now has no coverage at this UPA
-    upa = medico.upa
-    especialidade = medico.especialidade
-    tem_cobertura = Turno.objects.filter(
-        medico__upa=upa,
-        medico__especialidade=especialidade,
-        status__in=['em_atendimento', 'em_pausa'],
-    ).exclude(medico=medico).exists()
-    if not tem_cobertura:
-        ja_existe = Alerta.objects.filter(
-            upa=upa,
-            tipo='critico',
-            resolvido=False,
-            mensagem__icontains=especialidade.nome,
-        ).exists()
-        if not ja_existe:
-            Alerta.objects.create(
-                tipo='critico',
-                mensagem=(
-                    f'Sem cobertura de {especialidade.nome} na UPA {upa.nome}. '
-                    'Nenhum médico da especialidade está em atendimento.'
-                ),
-                upa=upa,
-                municipio=upa.municipio,
-            )
-
     return Response(TurnoSerializer(turno).data)
 
 
@@ -430,54 +392,6 @@ def ativar_conta(request):
     t.usado = True
     t.save()
     return Response({'mensagem': 'Senha criada com sucesso! Você já pode fazer login.'})
-
-
-# ─── Recuperação de Senha ─────────────────────────────────────────────────────
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def esqueci_senha(request):
-    """Gera token de redefinição e envia email. Resposta sempre 200 (não vaza existência do email)."""
-    from .email_service import enviar_email_redefinicao_senha
-    email = request.data.get('email', '').strip().lower()
-    if not email:
-        return Response({'erro': 'Email é obrigatório.'}, status=400)
-    try:
-        usuario = Usuario.objects.get(email=email, is_active=True)
-    except Usuario.DoesNotExist:
-        # Retorna 200 mesmo assim — não revela se o email existe
-        return Response({'mensagem': 'Se este email estiver cadastrado, você receberá um link em breve.'})
-    # Invalida tokens anteriores não usados do mesmo usuário
-    TokenRedefinicaoSenha.objects.filter(usuario=usuario, usado=False).update(usado=True)
-    token_str = secrets.token_urlsafe(48)
-    TokenRedefinicaoSenha.objects.create(
-        usuario=usuario,
-        token=token_str,
-        expira_em=timezone.now() + timedelta(hours=1),
-    )
-    enviar_email_redefinicao_senha(usuario.nome, usuario.email, token_str)
-    return Response({'mensagem': 'Se este email estiver cadastrado, você receberá um link em breve.'})
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def redefinir_senha(request):
-    token_str = request.data.get('token', '').strip()
-    nova_senha = request.data.get('nova_senha', '')
-    if not token_str or not nova_senha:
-        return Response({'erro': 'Token e nova senha são obrigatórios.'}, status=400)
-    if len(nova_senha) < 6:
-        return Response({'erro': 'A senha deve ter pelo menos 6 caracteres.'}, status=400)
-    try:
-        t = TokenRedefinicaoSenha.objects.get(token=token_str, usado=False)
-    except TokenRedefinicaoSenha.DoesNotExist:
-        return Response({'erro': 'Link inválido ou já utilizado.'}, status=400)
-    if timezone.now() > t.expira_em:
-        return Response({'erro': 'Este link expirou. Solicite um novo.'}, status=400)
-    t.usuario.set_password(nova_senha)
-    t.usuario.save()
-    t.usado = True
-    t.save()
-    return Response({'mensagem': 'Senha redefinida com sucesso! Você já pode fazer login.'})
 
 
 # ─── Usuários ─────────────────────────────────────────────────────────────────

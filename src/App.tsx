@@ -6,8 +6,6 @@
 import { useState } from 'react';
 import { useApp } from './store/AppContext';
 import AtivarConta from './components/AtivarConta';
-import EsqueciSenha from './components/EsqueciSenha';
-import RedefinirSenha from './components/RedefinirSenha';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
@@ -91,16 +89,6 @@ export default function App() {
     return (
       <AtivarConta
         token={tokenAtivacao}
-        onSuccess={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }}
-      />
-    );
-  }
-
-  const resetToken = new URLSearchParams(window.location.search).get('reset_token');
-  if (resetToken) {
-    return (
-      <RedefinirSenha
-        resetToken={resetToken}
         onSuccess={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }}
       />
     );
@@ -200,23 +188,11 @@ export default function App() {
       )}
       
       {currentView === 'login' && (
-        <LoginPage
-          onBack={handleBack}
-          onLoginSuccess={handleLoginSuccess}
-          onEsqueciSenha={() => setCurrentView('esqueci_senha')}
+        <LoginPage 
+          onBack={handleBack} 
+          onLoginSuccess={handleLoginSuccess} 
           systemName={systemConfig.name}
           systemLogo={systemConfig.logo}
-        />
-      )}
-
-      {currentView === 'esqueci_senha' && (
-        <EsqueciSenha />
-      )}
-
-      {currentView === 'redefinir_senha' && (
-        <RedefinirSenha
-          resetToken=""
-          onSuccess={() => setCurrentView('login')}
         />
       )}
 
@@ -401,7 +377,7 @@ export default function App() {
       )}
 
       {/* Dynamic Placeholder for remaining sub-screens */}
-      {typeof currentView === 'string' && !['landing', 'citizen', 'login', 'esqueci_senha', 'redefinir_senha', 'doctor', 'manager', 'admin', 'register_municipality', 'list_municipalities', 'list_municipal_managers', 'register_upa', 'list_upa', 'register_municipal_manager', 'register_upa_manager', 'list_manager', 'reports', 'upa_manager_dashboard', 'register_doctor', 'list_doctors', 'register_schedule', 'list_schedules', 'monitor_shifts'].includes(currentView) && (
+      {typeof currentView === 'string' && !['landing', 'citizen', 'login', 'doctor', 'manager', 'admin', 'register_municipality', 'list_municipalities', 'list_municipal_managers', 'register_upa', 'list_upa', 'register_municipal_manager', 'register_upa_manager', 'list_manager', 'reports', 'upa_manager_dashboard', 'register_doctor', 'list_doctors', 'register_schedule', 'list_schedules', 'monitor_shifts'].includes(currentView) && (
         <PlaceholderPage 
           title={`Tela: ${currentView.replace('_', ' ').toUpperCase()}`} 
           userName={
