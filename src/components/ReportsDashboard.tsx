@@ -1,7 +1,9 @@
-import React from 'react';
-import { ArrowLeft, TrendingUp, Users, Clock, Download, Calendar, UserCheck, Timer, History, Activity, Bell, LogOut } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { TrendingUp, Users, Clock, Download, Calendar, UserCheck, Timer, History, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import DashboardHeader from './DashboardHeader';
+import { relatoriosApi } from '../services/api';
+import { useApp } from '../store/AppContext';
 
 interface ReportsDashboardProps {
   onBack: () => void;
@@ -9,17 +11,28 @@ interface ReportsDashboardProps {
   onLogout: () => void;
 }
 
-const MOCK_DOCTOR_STATS = [
-  { id: '1', name: 'Dr. Ricardo Santos', specialty: 'Clínico Geral', totalHours: '168h', availability: '95%', status: 'Online' },
-  { id: '2', name: 'Dra. Juliana Lima', specialty: 'Pediatra', totalHours: '142h', availability: '88%', status: 'Offline' },
-  { id: '3', name: 'Dr. Marcos Oliveira', specialty: 'Ortopedista', totalHours: '120h', availability: '92%', status: 'Online' },
-  { id: '4', name: 'Dra. Beatriz Costa', specialty: 'Clínico Geral', totalHours: '156h', availability: '98%', status: 'Online' },
-];
-
 export default function ReportsDashboard({ onBack, userName, onLogout }: ReportsDashboardProps) {
+  const { usuario } = useApp();
+  const [dados, setDados] = useState<any>(null);
+  const [mesSelecionado, setMesSelecionado] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchDados = useCallback(async () => {
+    const upaId = usuario?.upa_id;
+    if (!upaId) return;
+    try {
+      const result = await relatoriosApi.upa(upaId, mesSelecionado || undefined);
+      setDados(result);
+    } catch {}
+  }, [usuario?.upa_id, mesSelecionado]);
+
+  useEffect(() => {
+    fetchDados().finally(() => setIsLoading(false));
+  }, [fetchDados]);
+
   return (
     <div className="min-h-screen bg-slate-50 pb-10">
-      <DashboardHeader 
+      <DashboardHeader
         userName={userName}
         roleName="Gestor de UPA"
         subInfo="Relatórios de Unidade"
@@ -29,13 +42,30 @@ export default function ReportsDashboard({ onBack, userName, onLogout }: Reports
 
       <main className="p-6 max-w-4xl mx-auto space-y-6">
         {/* Date Filter */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-          <div className="flex items-center gap-3 text-slate-600">
-            <Calendar size={20} />
-            <span className="text-sm font-bold">Março de 2026</span>
-          </div>
-          <button className="text-blue-600 text-sm font-bold hover:underline">Alterar mês</button>
+        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+          <Calendar size={20} className="text-slate-600" />
+          <label className="text-sm font-bold text-slate-600">Filtrar por mês:</label>
+          <input
+            type="month"
+            value={mesSelecionado}
+            onChange={e => setMesSelecionado(e.target.value)}
+            className="px-3 py-1 border border-slate-200 rounded-lg text-sm"
+          />
+          {mesSelecionado && (
+            <button
+              onClick={() => setMesSelecionado('')}
+              className="text-blue-600 text-xs font-bold hover:underline ml-auto"
+            >Limpar</button>
+          )}
         </div>
+
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="animate-spin text-slate-400" size={24} />
+            <span className="ml-2 text-sm text-slate-500">Carregando...</span>
+          </div>
+        )}
 
         {/* Big Stats - Focus on Doctors and Time */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -43,11 +73,11 @@ export default function ReportsDashboard({ onBack, userName, onLogout }: Reports
             <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
               <Users size={24} />
             </div>
-            <p className="text-3xl font-bold text-slate-800">24</p>
+            <p className="text-3xl font-bold text-slate-800">{dados?.medicos_ativos ?? '-'}</p>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Médicos Ativos no Mês</p>
             <div className="mt-4 flex items-center gap-1 text-green-500 text-xs font-bold">
               <UserCheck size={14} />
-              Todos com escalas em dia
+              Baseado em turnos registrados
             </div>
           </div>
 
@@ -55,11 +85,11 @@ export default function ReportsDashboard({ onBack, userName, onLogout }: Reports
             <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4">
               <Timer size={24} />
             </div>
-            <p className="text-3xl font-bold text-slate-800">3.840h</p>
+            <p className="text-3xl font-bold text-slate-800">{dados?.total_horas ?? '-'}</p>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Total Horas em Plantão</p>
             <div className="mt-4 flex items-center gap-1 text-emerald-500 text-xs font-bold">
               <TrendingUp size={14} />
-              +4% vs mês anterior
+              Baseado em turnos registrados
             </div>
           </div>
 
@@ -67,11 +97,11 @@ export default function ReportsDashboard({ onBack, userName, onLogout }: Reports
             <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-4">
               <Clock size={24} />
             </div>
-            <p className="text-3xl font-bold text-slate-800">92%</p>
+            <p className="text-3xl font-bold text-slate-800">{dados?.taxa_disponibilidade ?? '-'}</p>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Taxa de Disponibilidade</p>
             <div className="mt-4 flex items-center gap-1 text-slate-500 text-xs font-bold">
               <History size={14} />
-              Média de 8h/dia por médico
+              Baseado em turnos registrados
             </div>
           </div>
         </div>
@@ -95,7 +125,7 @@ export default function ReportsDashboard({ onBack, userName, onLogout }: Reports
           </div>
           <div className="h-48 flex items-end justify-between gap-2">
             {[60, 75, 80, 65, 90, 85, 40, 55, 70, 85, 95, 75].map((height, i) => (
-              <motion.div 
+              <motion.div
                 key={i}
                 initial={{ height: 0 }}
                 animate={{ height: `${height}%` }}
@@ -120,24 +150,27 @@ export default function ReportsDashboard({ onBack, userName, onLogout }: Reports
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
           <h3 className="text-lg font-bold text-slate-800 mb-6">Detalhamento por Profissional</h3>
           <div className="space-y-4">
-            {MOCK_DOCTOR_STATS.map((doc) => (
+            {!isLoading && (!dados?.detalhamento || dados.detalhamento.length === 0) && (
+              <p className="text-center text-slate-400 text-sm py-4">Nenhum médico no período selecionado.</p>
+            )}
+            {(dados?.detalhamento ?? []).map((doc: any) => (
               <div key={doc.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 border border-slate-200">
                     <Users size={20} />
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-800 text-sm">{doc.name}</h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{doc.specialty}</p>
+                    <h4 className="font-bold text-slate-800 text-sm">{doc.nome}</h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{doc.especialidade}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-8">
                   <div className="text-right">
-                    <p className="text-sm font-bold text-slate-800">{doc.totalHours}</p>
+                    <p className="text-sm font-bold text-slate-800">{doc.total_horas}</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Mês</p>
                   </div>
                   <div className="text-right hidden sm:block">
-                    <p className="text-sm font-bold text-emerald-600">{doc.availability}</p>
+                    <p className="text-sm font-bold text-emerald-600">{doc.assiduidade}</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Assiduidade</p>
                   </div>
                   <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
