@@ -249,6 +249,33 @@ def encerrar_turno(request):
     turno.encerrado_em = timezone.now()
     turno.save()
     RegistroTurno.objects.create(turno=turno, acao='encerramento')
+
+    # Alert: check if specialty now has no coverage at this UPA
+    upa = medico.upa
+    especialidade = medico.especialidade
+    tem_cobertura = Turno.objects.filter(
+        medico__upa=upa,
+        medico__especialidade=especialidade,
+        status__in=['em_atendimento', 'em_pausa'],
+    ).exclude(medico=medico).exists()
+    if not tem_cobertura:
+        ja_existe = Alerta.objects.filter(
+            upa=upa,
+            tipo='critico',
+            resolvido=False,
+            mensagem__icontains=especialidade.nome,
+        ).exists()
+        if not ja_existe:
+            Alerta.objects.create(
+                tipo='critico',
+                mensagem=(
+                    f'Sem cobertura de {especialidade.nome} na UPA {upa.nome}. '
+                    'Nenhum médico da especialidade está em atendimento.'
+                ),
+                upa=upa,
+                municipio=upa.municipio,
+            )
+
     return Response(TurnoSerializer(turno).data)
 
 
