@@ -160,7 +160,8 @@ class UPAPublicaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UPA
-        fields = ['id', 'nome', 'bairro', 'municipio_nome', 'especialidades', 'status_especialidade']
+        fields = ['id', 'nome', 'bairro', 'municipio_nome', 'especialidades',
+                  'status_especialidade', 'latitude', 'longitude']
 
     def get_status_especialidade(self, obj):
         especialidade_id = self.context.get('especialidade_id')
