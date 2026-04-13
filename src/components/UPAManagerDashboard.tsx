@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Users, Stethoscope, Calendar, Clock, AlertTriangle, Plus, ChevronRight,
   User, Activity, Coffee, CheckCircle2
@@ -23,21 +23,28 @@ export default function UPAManagerDashboard({ userName, upaName, onLogout, onNav
   const [alertas, setAlertas] = useState<any[]>([]);
   const [turnos, setTurnos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
+
+  const fetchDados = useCallback(async () => {
+    const upaId = usuario?.upa_id;
+    try {
+      const [m, a, t] = await Promise.all([
+        medicosApi.listar(upaId ? { upa_id: upaId } : {}),
+        alertasApi.listar(),
+        turnosApi.listar(upaId ? { upa_id: upaId } : {}),
+      ]);
+      setMedicos(m);
+      setAlertas(a);
+      setTurnos(t);
+      setUltimaAtualizacao(new Date());
+    } catch {} // silencioso — não limpar dados em falha de polling
+  }, [usuario?.upa_id]);
 
   useEffect(() => {
-    const upaId = usuario?.upa_id;
-    Promise.all([
-      medicosApi.listar(upaId ? { upa_id: upaId } : {}),
-      alertasApi.listar(),
-      turnosApi.listar(upaId ? { upa_id: upaId } : {}),
-    ])
-      .then(([m, a, t]) => {
-        setMedicos(m);
-        setAlertas(a);
-        setTurnos(t);
-      })
-      .finally(() => setIsLoading(false));
-  }, [usuario]);
+    fetchDados().finally(() => setIsLoading(false)); // setIsLoading(false) apenas no primeiro fetch
+    const intervalo = setInterval(fetchDados, 15_000);
+    return () => clearInterval(intervalo);
+  }, [fetchDados]);
 
   const emAtendimento = medicos.filter(m => m.status_turno === 'em_atendimento').length;
   const emPausa = medicos.filter(m => m.status_turno === 'em_pausa').length;
@@ -67,7 +74,14 @@ export default function UPAManagerDashboard({ userName, upaName, onLogout, onNav
 
       <main className="p-4 max-w-5xl mx-auto space-y-6">
         <section className="mt-2">
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Painel da UPA</h2>
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Painel da UPA</h2>
+            {ultimaAtualizacao && (
+              <p className="text-[10px] text-slate-400 font-bold">
+                Atualizado às {ultimaAtualizacao.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+          </div>
           <p className="text-slate-500 text-sm font-medium">Gerencie médicos, escalas e funcionamento da unidade</p>
         </section>
 
