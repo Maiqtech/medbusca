@@ -89,10 +89,8 @@ class MunicipioSerializer(serializers.ModelSerializer):
         return obj.upas.count()
 
     def get_total_gestores(self, obj):
-        from django.db.models import Q
-        return Usuario.objects.filter(is_active=True).filter(
-            Q(perfil='gestor_municipal', municipio=obj) |
-            Q(perfil='gestor_upa', upa__municipio=obj)
+        return Usuario.objects.filter(
+            is_active=True, perfil='gestor_municipal', municipio=obj
         ).count()
 
     def get_total_medicos(self, obj):

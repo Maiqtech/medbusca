@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import DashboardHeader from './DashboardHeader';
-import { municipiosApi, alertasApi } from '../services/api';
+import { municipiosApi } from '../services/api';
 
 interface SuperAdminDashboardProps {
   userName: string;
@@ -18,15 +18,11 @@ interface SuperAdminDashboardProps {
 export default function SuperAdminDashboard({ userName, onLogout, onNavigate, systemName, systemLogo }: SuperAdminDashboardProps) {
 
   const [municipios, setMunicipios] = useState<any[]>([]);
-  const [alertas, setAlertas] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([municipiosApi.listar(), alertasApi.listar()])
-      .then(([muns, alts]) => {
-        setMunicipios(muns);
-        setAlertas(alts);
-      })
+    municipiosApi.listar()
+      .then(setMunicipios)
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -157,29 +153,11 @@ export default function SuperAdminDashboard({ userName, onLogout, onNavigate, sy
             </div>
           </section>
 
-          {/* Alerts */}
+          {/* Alerts placeholder — endpoint removido */}
           <section className="space-y-4">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Alertas do Sistema</h3>
-            <div className="space-y-3">
-              {alertas.length === 0 ? (
-                <div className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700 text-xs font-bold">
-                  Nenhum alerta ativo no momento.
-                </div>
-              ) : (
-                alertas.slice(0, 5).map((alerta, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-4 rounded-2xl border flex gap-3 ${
-                      alerta.tipo === 'critico' ? 'bg-red-50 border-red-100 text-red-800' :
-                      alerta.tipo === 'aviso' ? 'bg-amber-50 border-amber-100 text-amber-800' :
-                      'bg-blue-50 border-blue-100 text-blue-800'
-                    }`}
-                  >
-                    <AlertTriangle size={18} className="shrink-0 mt-0.5" />
-                    <p className="text-xs font-bold leading-relaxed">{alerta.mensagem}</p>
-                  </div>
-                ))
-              )}
+            <div className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700 text-xs font-bold">
+              Nenhum alerta ativo no momento.
             </div>
           </section>
         </div>

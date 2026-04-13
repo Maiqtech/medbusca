@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import DashboardHeader from './DashboardHeader';
-import { upasApi, alertasApi, relatoriosApi } from '../services/api';
+import { upasApi, relatoriosApi } from '../services/api';
 import { useApp } from '../store/AppContext';
 
 interface MunicipalManagerDashboardProps {
@@ -22,7 +22,6 @@ export default function MunicipalManagerDashboard({
 }: MunicipalManagerDashboardProps) {
   const { usuario } = useApp();
   const [upas, setUpas] = useState<any[]>([]);
-  const [alertas, setAlertas] = useState<any[]>([]);
   const [relatorio, setRelatorio] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -30,16 +29,14 @@ export default function MunicipalManagerDashboard({
     const municipioId = usuario?.municipio_id;
     const promises: Promise<any>[] = [
       upasApi.listar(municipioId ? { municipio_id: municipioId } : {}),
-      alertasApi.listar(),
     ];
     if (municipioId) {
       promises.push(relatoriosApi.municipio(municipioId));
     }
 
     Promise.all(promises)
-      .then(([u, a, r]) => {
+      .then(([u, r]) => {
         setUpas(u);
-        setAlertas(a);
         if (r) setRelatorio(r);
       })
       .finally(() => setIsLoading(false));
@@ -168,29 +165,11 @@ export default function MunicipalManagerDashboard({
             </div>
           </section>
 
-          {/* Alerts */}
+          {/* Alerts placeholder */}
           <section className="space-y-4">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Alertas do Município</h3>
-            <div className="space-y-3">
-              {alertas.length === 0 ? (
-                <div className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700 text-xs font-bold">
-                  Nenhum alerta ativo.
-                </div>
-              ) : (
-                alertas.slice(0, 5).map((alerta, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-4 rounded-2xl border flex gap-3 ${
-                      alerta.tipo === 'critico' ? 'bg-red-50 border-red-100 text-red-800' :
-                      alerta.tipo === 'aviso' ? 'bg-amber-50 border-amber-100 text-amber-800' :
-                      'bg-blue-50 border-blue-100 text-blue-800'
-                    }`}
-                  >
-                    <AlertTriangle size={18} className="shrink-0 mt-0.5" />
-                    <p className="text-xs font-bold leading-relaxed">{alerta.mensagem}</p>
-                  </div>
-                ))
-              )}
+            <div className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700 text-xs font-bold">
+              Nenhum alerta ativo.
             </div>
           </section>
         </div>
