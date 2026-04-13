@@ -15,6 +15,10 @@ from .serializers import (
     TurnoSerializer, UPAPublicaSerializer, UPASerializer,
     UsuarioCriarSerializer, UsuarioSerializer,
 )
+from .management.commands.verificar_alertas_estruturais import (
+    verificar_alertas_upa,
+    verificar_alertas_municipio,
+)
 
 
 class MedBuscaTokenObtainPairView(TokenObtainPairView):
@@ -421,6 +425,11 @@ class UsuarioListCreate(generics.ListCreateAPIView):
         serializer = UsuarioCriarSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         usuario = serializer.save()
+        # Re-evaluate structural alerts after new user created
+        if usuario.perfil == 'gestor_upa' and usuario.upa_id:
+            verificar_alertas_upa(usuario.upa)
+        elif usuario.perfil == 'gestor_municipal' and usuario.municipio_id:
+            verificar_alertas_municipio(usuario.municipio)
         return Response(UsuarioSerializer(usuario).data, status=status.HTTP_201_CREATED)
 
 
@@ -435,4 +444,9 @@ def desativar_usuario(request, pk):
     # Libera o e-mail para reutilização futura
     usuario.email = f'__inativo_{usuario.pk}__{usuario.email}'
     usuario.save()
+    # Re-evaluate structural alerts after user deactivated
+    if usuario.perfil == 'gestor_upa' and usuario.upa_id:
+        verificar_alertas_upa(usuario.upa)
+    elif usuario.perfil == 'gestor_municipal' and usuario.municipio_id:
+        verificar_alertas_municipio(usuario.municipio)
     return Response({'mensagem': 'Usuário desativado.'})
