@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  Hospital, Users, Stethoscope, Activity, PlusCircle, ChevronRight,
-  AlertTriangle, LayoutDashboard, Loader2 // Stethoscope used in stats below
+  Hospital, Users, Stethoscope, Activity, ChevronRight,
+  LayoutDashboard, Loader2 // Stethoscope used in stats below
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import DashboardHeader from '../../../components/DashboardHeader';
 import { upasApi, relatoriosApi } from '../../../services/api';
 import { useApp } from '../../../store/AppContext';
+import UPAManagementModal from '../../upas/components/UPAManagementModal';
 
 interface MunicipalManagerDashboardProps {
   userName: string;
@@ -24,29 +25,25 @@ export default function MunicipalManagerDashboard({
   const [upas, setUpas] = useState<any[]>([]);
   const [relatorio, setRelatorio] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedUpaId, setSelectedUpaId] = useState<number | string | null>(null);
+
+  const fetchDados = useCallback(async () => {
+    const municipioId = usuario?.municipio_id;
+    const promises: Promise<any>[] = [upasApi.listar(municipioId ? { municipio_id: municipioId, interno: 1 } : { interno: 1 })];
+    if (municipioId) promises.push(relatoriosApi.municipio(municipioId));
+
+    const [u, r] = await Promise.all(promises);
+    setUpas(u);
+    if (r) setRelatorio(r);
+  }, [usuario?.municipio_id]);
 
   useEffect(() => {
-    const municipioId = usuario?.municipio_id;
-    const promises: Promise<any>[] = [
-      upasApi.listar(municipioId ? { municipio_id: municipioId } : {}),
-    ];
-    if (municipioId) {
-      promises.push(relatoriosApi.municipio(municipioId));
-    }
-
-    Promise.all(promises)
-      .then(([u, r]) => {
-        setUpas(u);
-        if (r) setRelatorio(r);
-      })
-      .finally(() => setIsLoading(false));
-  }, [usuario]);
+    fetchDados().finally(() => setIsLoading(false));
+  }, [fetchDados]);
 
   const quickActions = [
-    { label: 'Cadastrar UPA', icon: PlusCircle, screen: 'register_upa' },
-    { label: 'Ver UPAs', icon: Hospital, screen: 'list_upa' },
-    { label: 'Cadastrar Gestor UPA', icon: Users, screen: 'register_upa_manager' },
-    { label: 'Ver Gestores', icon: Users, screen: 'list_manager' },
+    { label: 'Area das UPAs', icon: Hospital, screen: 'list_upa' },
+    { label: 'Area dos Gestores UPA', icon: Users, screen: 'list_manager' },
     { label: 'Relatórios', icon: Activity, screen: 'reports' },
   ];
 
@@ -100,7 +97,7 @@ export default function MunicipalManagerDashboard({
         {/* Quick Actions */}
         <section className="space-y-4">
           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Ações Rápidas</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {quickActions.map((action, idx) => (
               <button
                 key={idx}
@@ -139,7 +136,7 @@ export default function MunicipalManagerDashboard({
                 upas.slice(0, 5).map((upa, idx) => (
                   <button
                     key={idx}
-                    onClick={() => onNavigate('list_upa')}
+                    onClick={() => setSelectedUpaId(upa.id)}
                     className="w-full flex items-center justify-between p-5 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 active:bg-slate-100 select-none"
                   >
                     <div className="flex items-center gap-4">
@@ -174,6 +171,12 @@ export default function MunicipalManagerDashboard({
           </section>
         </div>
       </main>
+
+      <UPAManagementModal
+        upaId={selectedUpaId}
+        onClose={() => setSelectedUpaId(null)}
+        onUpdated={fetchDados}
+      />
 
       {/* Bottom Nav */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex items-center justify-around z-40 sm:hidden">

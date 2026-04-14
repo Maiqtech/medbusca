@@ -122,7 +122,11 @@ export const especialidadesApi = {
 };
 
 export const upasApi = {
-  listar: (params?: { municipio_id?: number | string; especialidade_id?: number | string }) => {
+  listar: (params?: {
+    municipio_id?: number | string;
+    especialidade_id?: number | string;
+    interno?: number | string | boolean;
+  }) => {
     const query = params ? `?${new URLSearchParams(params as any).toString()}` : '';
     return apiFetch<any[]>(`/upas/${query}`);
   },
@@ -177,6 +181,10 @@ export const relatoriosApi = {
   upa: (upa_id: number | string, mes?: string) => {
     const query = mes ? `?mes=${mes}` : '';
     return apiFetch<any>(`/relatorios/upa/${upa_id}/${query}`);
+  },
+  medico: (upa_id: number | string, medico_id: number | string, mes?: string) => {
+    const query = mes ? `?mes=${mes}` : '';
+    return apiFetch<any>(`/relatorios/upa/${upa_id}/medico/${medico_id}/${query}`);
   },
   municipio: (municipio_id: number | string) => apiFetch<any>(`/relatorios/municipio/${municipio_id}/`),
 };

@@ -7,8 +7,19 @@ from api.models import Especialidade, UPA
 from api.serializers import UPAPublicaSerializer, UPASerializer
 
 
+def is_internal_upa_request(request):
+    user = request.user
+    return bool(
+        request.query_params.get("interno")
+        and getattr(user, "is_authenticated", False)
+        and getattr(user, "perfil", None) in ["gestor_municipal", "gestor_upa", "super_admin"]
+    )
+
+
 def get_upa_serializer_class(request):
     if request.method == "POST":
+        return UPASerializer
+    if is_internal_upa_request(request):
         return UPASerializer
     especialidade_id = request.query_params.get("especialidade_id")
     municipio_id = request.query_params.get("municipio_id")
@@ -18,7 +29,8 @@ def get_upa_serializer_class(request):
 
 
 def get_upas_queryset(request):
-    qs = UPA.objects.filter(ativa=True).prefetch_related("especialidades", "medicos")
+    qs = UPA.objects.all() if is_internal_upa_request(request) else UPA.objects.filter(ativa=True)
+    qs = qs.prefetch_related("especialidades", "medicos")
     municipio_id = request.query_params.get("municipio_id")
     especialidade_id = request.query_params.get("especialidade_id")
     if municipio_id:

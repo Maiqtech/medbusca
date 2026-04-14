@@ -27,7 +27,7 @@ export default function ManagerList({ onBack, onAdd, userName, onLogout, type = 
   const perfil = type === 'municipal' ? 'gestor_municipal' : 'gestor_upa';
   const titulo = municipioNome
     ? `Gestores — ${municipioNome}`
-    : type === 'municipal' ? 'Gestores Municipais' : 'Gestores de UPA';
+    : type === 'municipal' ? 'Area dos Gestores Municipais' : 'Area dos Gestores de UPA';
 
   useEffect(() => {
     const params: any = { perfil };

@@ -30,7 +30,7 @@ export default function ManagerRegistration({
   useEffect(() => {
     const load = type === 'municipal'
       ? municipiosApi.listar()
-      : upasApi.listar(usuario?.municipio_id ? { municipio_id: usuario.municipio_id } : {});
+      : upasApi.listar(usuario?.municipio_id ? { municipio_id: usuario.municipio_id, interno: 1 } : { interno: 1 });
 
     load
       .then(setOpcoes)
@@ -57,11 +57,12 @@ export default function ManagerRegistration({
 
     setIsLoading(true);
     try {
+      const upaSelecionada = type === 'upa' ? opcoes.find((u: any) => String(u.id) === formData.targetId) : null;
       await usuariosApi.criar({
         nome: formData.nome.trim(),
         email: formData.email.trim(),
         perfil: type === 'municipal' ? 'gestor_municipal' : 'gestor_upa',
-        municipio: type === 'municipal' ? Number(formData.targetId) : undefined,
+        municipio: type === 'municipal' ? Number(formData.targetId) : upaSelecionada?.municipio,
         upa: type === 'upa' ? Number(formData.targetId) : undefined,
       });
       setIsSuccess(true);

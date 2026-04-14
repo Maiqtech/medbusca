@@ -25,6 +25,8 @@ class UsuarioCriarSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         senha = validated_data.pop("senha", None)
         user = Usuario(**validated_data)
+        if user.perfil == "gestor_upa" and user.upa and not user.municipio:
+            user.municipio = user.upa.municipio
         if senha:
             user.set_password(senha)
         else:

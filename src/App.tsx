@@ -338,7 +338,7 @@ export default function App() {
         <ReportsDashboard 
           userName={usuario?.nome ?? ''}
           onLogout={handleBack}
-          onBack={() => setCurrentView('upa_manager_dashboard')}
+          onBack={() => setCurrentView(usuario?.perfil === 'gestor_municipal' ? 'manager' : 'upa_manager_dashboard')}
         />
       )}
 
