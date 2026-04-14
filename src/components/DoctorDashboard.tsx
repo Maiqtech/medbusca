@@ -28,6 +28,7 @@ type ShiftStatus = 'not_started' | 'in_service' | 'on_break' | 'ended';
 interface HistoryEntry {
   time: string;
   action: string;
+  acao: string;
 }
 
 export default function DoctorDashboard({ userName, onLogout, systemName, systemLogo }: DoctorDashboardProps) {
@@ -54,6 +55,7 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
       if (data.historico) {
         setHistory(data.historico.map((r: any) => ({
           time: new Date(r.registrado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          acao: r.acao,
           action: r.acao === 'inicio' ? 'Início do turno'
             : r.acao === 'pausa' ? 'Pausa'
             : r.acao === 'retorno' ? 'Retorno'
@@ -79,9 +81,9 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
     return () => clearInterval(clockTimer);
   }, []);
 
-  const addHistory = (action: string) => {
+  const addHistory = (acao: string, action: string) => {
     const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    setHistory(prev => [{ time: now, action }, ...prev]);
+    setHistory(prev => [{ time: now, acao, action }, ...prev]);
   };
 
   const handleStart = async () => {
@@ -89,7 +91,7 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
     try {
       await turnosApi.iniciar();
       setStatus('in_service');
-      addHistory('Início do turno');
+      addHistory('inicio', 'Início do turno');
     } catch (e: any) { alert(e.message); }
     finally { setIsActionLoading(false); }
   };
@@ -99,7 +101,7 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
     try {
       await turnosApi.pausar();
       setStatus('on_break');
-      addHistory('Pausa');
+      addHistory('pausa', 'Pausa');
     } catch (e: any) { alert(e.message); }
     finally { setIsActionLoading(false); }
   };
@@ -109,7 +111,7 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
     try {
       await turnosApi.retornar();
       setStatus('in_service');
-      addHistory('Retorno');
+      addHistory('retorno', 'Retorno');
     } catch (e: any) { alert(e.message); }
     finally { setIsActionLoading(false); }
   };
@@ -119,7 +121,7 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
     try {
       await turnosApi.encerrar();
       setStatus('ended');
-      addHistory('Encerramento');
+      addHistory('encerramento', 'Encerramento');
     } catch (e: any) { alert(e.message); }
     finally { setIsActionLoading(false); }
   };
@@ -313,10 +315,10 @@ export default function DoctorDashboard({ userName, onLogout, systemName, system
               history.map((entry, i) => (
                 <div key={i} className="flex items-center gap-4 relative">
                   <div className={`w-6 h-6 rounded-full border-4 border-white shadow-sm z-10 ${
-                    entry.action.includes('Início') ? 'bg-blue-500' :
-                    entry.action.includes('Pausa') ? 'bg-amber-500' :
-                    entry.action.includes('Retorno') ? 'bg-green-500' :
-                    'bg-red-500'
+                    entry.acao === 'inicio' ? 'bg-green-500' :
+                    entry.acao === 'pausa' ? 'bg-amber-400' :
+                    entry.acao === 'retorno' ? 'bg-blue-500' :
+                    'bg-slate-400'
                   }`} />
                   <div className="flex-1 flex items-center justify-between">
                     <p className="text-sm font-bold text-slate-700">{entry.action}</p>

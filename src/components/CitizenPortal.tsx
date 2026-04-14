@@ -25,6 +25,7 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
   const [upaDetalhe, setUpaDetalhe] = useState<any>(null);
   const [loadingDetalhe, setLoadingDetalhe] = useState(false);
+  const [previsaoUpas, setPrevisaoUpas] = useState<any[] | null>(null);
 
   const abrirDetalhe = async (upa: any) => {
     setLoadingDetalhe(true);
@@ -92,12 +93,17 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
     if (!selectedMunicipio) return;
     setIsSearching(true);
     setErro(null);
+    setPrevisaoUpas(null);
     try {
       const params: any = { municipio_id: selectedMunicipio.id };
       if (selectedEspecialidade) params.especialidade_id = selectedEspecialidade.id;
       const upas = await upasApi.listar(params);
       setResults(upas);
       setUltimaAtualizacao(new Date());
+      if (upas.length === 0 && selectedEspecialidade) {
+        const todas = await upasApi.listar({ municipio_id: selectedMunicipio.id });
+        setPrevisaoUpas(todas.slice(0, 2));
+      }
     } catch {
       setErro('Erro ao buscar UPAs. Tente novamente.');
     } finally {
@@ -336,16 +342,55 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
                   })}
                 </div>
               ) : (
-                <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 text-center space-y-4">
-                  <div className="w-20 h-20 bg-slate-50 text-slate-200 rounded-full flex items-center justify-center mx-auto">
-                    <AlertCircle size={40} />
+                <div className="space-y-4">
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 text-center space-y-3">
+                    <div className="w-16 h-16 bg-slate-50 text-slate-200 rounded-full flex items-center justify-center mx-auto">
+                      <AlertCircle size={32} />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="font-black text-slate-800 text-lg">Especialidade indisponível</h4>
+                      <p className="text-slate-400 text-sm leading-relaxed">
+                        Nenhuma unidade em <strong>{selectedMunicipio?.nome}</strong> possui <strong>{selectedEspecialidade?.nome}</strong> cadastrada no momento.
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <h4 className="font-black text-slate-800 text-xl">Nenhum atendimento agora</h4>
-                    <p className="text-slate-400 text-sm leading-relaxed">
-                      Não encontramos especialistas em <strong>{selectedEspecialidade?.nome}</strong> disponíveis em {selectedMunicipio?.nome}.
-                    </p>
-                  </div>
+                  {previsaoUpas && previsaoUpas.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">
+                        Unidades disponíveis na região
+                      </p>
+                      {previsaoUpas.map((upa) => (
+                        <motion.div
+                          key={upa.id}
+                          onClick={() => abrirDetalhe(upa)}
+                          className="bg-white p-5 rounded-[2rem] border border-slate-100 cursor-pointer hover:shadow-md transition-all"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-1">
+                              <h4 className="font-black text-slate-800 text-base leading-tight">{upa.nome}</h4>
+                              <div className="flex items-center gap-1.5 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                                <MapPin size={12} className="text-slate-300" />
+                                {upa.bairro || upa.municipio_nome}
+                              </div>
+                              {upa.especialidades?.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {upa.especialidades.map((e: any) => (
+                                    <span key={e.id} className="text-[9px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
+                                      {e.nome}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold uppercase bg-slate-50 px-2 py-1.5 rounded-xl">
+                              <Info size={12} />
+                              Ver detalhes
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>
