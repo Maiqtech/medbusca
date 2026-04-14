@@ -4,30 +4,31 @@
  */
 
 import { useState } from 'react';
-import { useApp } from './store/AppContext';
-import AtivarConta from './components/AtivarConta';
-import EsqueciSenha from './components/EsqueciSenha';
-import RedefinirSenha from './components/RedefinirSenha';
-import LandingPage from './components/LandingPage';
-import LoginPage from './components/LoginPage';
-import SuperAdminDashboard from './components/SuperAdminDashboard';
-import MunicipalityRegistration from './components/MunicipalityRegistration';
-import MunicipalityList from './components/MunicipalityList';
-import MunicipalManagerDashboard from './components/MunicipalManagerDashboard';
-import CitizenPortal from './components/CitizenPortal';
-import DoctorDashboard from './components/DoctorDashboard';
-import UPARegistration from './components/UPARegistration';
-import UPAList from './components/UPAList';
-import ManagerRegistration from './components/ManagerRegistration';
-import ManagerList from './components/ManagerList';
-import ReportsDashboard from './components/ReportsDashboard';
-import UPAManagerDashboard from './components/UPAManagerDashboard';
-import DoctorRegistration from './components/DoctorRegistration';
-import DoctorList from './components/DoctorList';
-import ScheduleRegistration from './components/ScheduleRegistration';
-import ScheduleList from './components/ScheduleList';
-import ShiftMonitoring from './components/ShiftMonitoring';
-import PlaceholderPage from './components/PlaceholderPage';
+import { useApp } from './app/providers/AppContext';
+import AtivarConta from './features/auth/components/AtivarConta';
+import EsqueciSenha from './features/auth/components/EsqueciSenha';
+import RedefinirSenha from './features/auth/components/RedefinirSenha';
+import LandingPage from './features/public/components/LandingPage';
+import LoginPage from './features/auth/components/LoginPage';
+import SuperAdminDashboard from './features/admin/components/SuperAdminDashboard';
+import MunicipalityRegistration from './features/municipios/components/MunicipalityRegistration';
+import MunicipalityList from './features/municipios/components/MunicipalityList';
+import MunicipalManagerDashboard from './features/municipios/components/MunicipalManagerDashboard';
+import CitizenPortal from './features/public/components/CitizenPortal';
+import DoctorDashboard from './features/medicos/components/DoctorDashboard';
+import DoctorHistoryPage from './features/medicos/components/DoctorHistoryPage';
+import UPARegistration from './features/upas/components/UPARegistration';
+import UPAList from './features/upas/components/UPAList';
+import ManagerRegistration from './features/usuarios/components/ManagerRegistration';
+import ManagerList from './features/usuarios/components/ManagerList';
+import ReportsDashboard from './features/relatorios/components/ReportsDashboard';
+import UPAManagerDashboard from './features/upas/components/UPAManagerDashboard';
+import DoctorRegistration from './features/medicos/components/DoctorRegistration';
+import DoctorList from './features/medicos/components/DoctorList';
+import ScheduleRegistration from './features/escalas/components/ScheduleRegistration';
+import ScheduleList from './features/escalas/components/ScheduleList';
+import ShiftMonitoring from './features/escalas/components/ShiftMonitoring';
+import PlaceholderPage from './shared/components/PlaceholderPage';
 
 type View = 'landing' | 'citizen' | 'login' | 'doctor' | 'manager' | 'admin' | 'register_municipality' | string;
 
@@ -395,13 +396,24 @@ export default function App() {
         <DoctorDashboard 
           userName={usuario?.nome ?? ''}
           onLogout={handleBack}
+          onNavigate={setCurrentView}
+          systemName={systemConfig.name}
+          systemLogo={systemConfig.logo}
+        />
+      )}
+
+      {currentView === 'doctor_history' && (
+        <DoctorHistoryPage
+          userName={usuario?.nome ?? ''}
+          onBack={() => setCurrentView('doctor')}
+          onLogout={handleBack}
           systemName={systemConfig.name}
           systemLogo={systemConfig.logo}
         />
       )}
 
       {/* Dynamic Placeholder for remaining sub-screens */}
-      {typeof currentView === 'string' && !['landing', 'citizen', 'login', 'esqueci_senha', 'redefinir_senha', 'doctor', 'manager', 'admin', 'register_municipality', 'list_municipalities', 'list_municipal_managers', 'register_upa', 'list_upa', 'register_municipal_manager', 'register_upa_manager', 'list_manager', 'reports', 'upa_manager_dashboard', 'register_doctor', 'list_doctors', 'register_schedule', 'list_schedules', 'monitor_shifts'].includes(currentView) && (
+      {typeof currentView === 'string' && !['landing', 'citizen', 'login', 'esqueci_senha', 'redefinir_senha', 'doctor', 'doctor_history', 'manager', 'admin', 'register_municipality', 'list_municipalities', 'list_municipal_managers', 'register_upa', 'list_upa', 'register_municipal_manager', 'register_upa_manager', 'list_manager', 'reports', 'upa_manager_dashboard', 'register_doctor', 'list_doctors', 'register_schedule', 'list_schedules', 'monitor_shifts'].includes(currentView) && (
         <PlaceholderPage 
           title={`Tela: ${currentView.replace('_', ' ').toUpperCase()}`} 
           userName={
