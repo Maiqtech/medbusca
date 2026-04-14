@@ -22,6 +22,7 @@ urlpatterns = [
     # UPAs
     path('upas/', views.UPAListCreate.as_view()),
     path('upas/<int:pk>/', views.UPADetail.as_view()),
+    path('upas/<int:pk>/disponibilidade/', views.upa_disponibilidade),
 
     # Médicos
     path('medicos/', views.MedicoListCreate.as_view()),

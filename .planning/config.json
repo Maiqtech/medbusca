@@ -3,5 +3,8 @@
   "granularity": "standard",
   "parallel": true,
   "commit_docs": true,
-  "runtime": "claude"
+  "runtime": "claude",
+  "workflow": {
+    "_auto_chain_active": false
+  }
 }

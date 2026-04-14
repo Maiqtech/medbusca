@@ -115,6 +115,63 @@ class UPADetail(generics.RetrieveUpdateAPIView):
     permission_classes = [IsGestorMunicipal]
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def upa_disponibilidade(request, pk):
+    from datetime import datetime as dt
+    try:
+        upa = UPA.objects.prefetch_related(
+            'medicos__especialidade', 'medicos__turnos', 'medicos__escalas'
+        ).get(pk=pk, ativa=True)
+    except UPA.DoesNotExist:
+        return Response({'error': 'UPA não encontrada'}, status=404)
+
+    agora = timezone.now()
+    especialidades = Especialidade.objects.filter(medicos__upa=upa).distinct().order_by('nome')
+
+    resultado = []
+    for esp in especialidades:
+        medicos = upa.medicos.filter(especialidade=esp)
+
+        disponivel = any(
+            m.turnos.filter(status='em_atendimento').exists() for m in medicos
+        )
+        if disponivel:
+            resultado.append({'especialidade_id': esp.id, 'especialidade': esp.nome,
+                               'disponivel': True, 'proximo_turno': None})
+            continue
+
+        proxima = None
+        for medico in medicos:
+            escala = medico.escalas.filter(data__gte=agora.date()).order_by('data', 'hora_inicio').first()
+            if escala and (proxima is None or (escala.data, escala.hora_inicio) < (proxima.data, proxima.hora_inicio)):
+                proxima = escala
+
+        proximo_str = None
+        if proxima:
+            dias_diff = (proxima.data - agora.date()).days
+            hora_fmt = proxima.hora_inicio.strftime("%H:%M")
+            if dias_diff == 0:
+                hora_inicio = dt.combine(proxima.data, proxima.hora_inicio)
+                if hora_inicio.replace(tzinfo=agora.tzinfo) > agora:
+                    proximo_str = f'hoje às {hora_fmt}'
+            elif dias_diff == 1:
+                proximo_str = f'amanhã às {hora_fmt}'
+            else:
+                proximo_str = f'{proxima.data.strftime("%d/%m")} às {hora_fmt}'
+
+        resultado.append({'especialidade_id': esp.id, 'especialidade': esp.nome,
+                           'disponivel': False, 'proximo_turno': proximo_str})
+
+    return Response({
+        'id': upa.id,
+        'nome': upa.nome,
+        'bairro': upa.bairro,
+        'municipio_nome': upa.municipio.nome,
+        'especialidades': resultado,
+    })
+
+
 # ─── Médicos ──────────────────────────────────────────────────────────────────
 class MedicoListCreate(generics.ListCreateAPIView):
     permission_classes = [IsGestorUPA]

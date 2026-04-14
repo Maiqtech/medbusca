@@ -167,29 +167,41 @@ class UPAPublicaSerializer(serializers.ModelSerializer):
             return None
 
         try:
-            medico = obj.medicos.filter(especialidade_id=especialidade_id).first()
-            if not medico:
-                return {'disponivel': False, 'proximo_turno': None}
-
-            turno = medico.turnos.filter(status='em_atendimento').first()
-            if turno:
-                return {'disponivel': True, 'proximo_turno': None}
-
             from django.utils import timezone
             from datetime import datetime
+
+            medicos = obj.medicos.filter(especialidade_id=especialidade_id)
+            if not medicos.exists():
+                return {'disponivel': False, 'proximo_turno': None}
+
+            # Verifica se algum médico tem turno ativo agora
+            for medico in medicos:
+                if medico.turnos.filter(status='em_atendimento').exists():
+                    return {'disponivel': True, 'proximo_turno': None}
+
+            # Nenhum ativo — busca a próxima escala entre todos os médicos
             agora = timezone.now()
-            proxima = medico.escalas.filter(
-                data__gte=agora.date()
-            ).order_by('data', 'hora_inicio').first()
+            proxima = None
+            for medico in medicos:
+                escala = medico.escalas.filter(
+                    data__gte=agora.date()
+                ).order_by('data', 'hora_inicio').first()
+                if escala:
+                    if proxima is None or (escala.data, escala.hora_inicio) < (proxima.data, proxima.hora_inicio):
+                        proxima = escala
 
             proximo_str = None
             if proxima:
-                if proxima.data == agora.date():
+                dias_diff = (proxima.data - agora.date()).days
+                hora_fmt = proxima.hora_inicio.strftime("%H:%M")
+                if dias_diff == 0:
                     hora_inicio = datetime.combine(proxima.data, proxima.hora_inicio)
                     if hora_inicio.replace(tzinfo=agora.tzinfo) > agora:
-                        proximo_str = f'hoje às {proxima.hora_inicio.strftime("%H:%M")}'
+                        proximo_str = f'hoje às {hora_fmt}'
+                elif dias_diff == 1:
+                    proximo_str = f'amanhã às {hora_fmt}'
                 else:
-                    proximo_str = f'amanhã às {proxima.hora_inicio.strftime("%H:%M")}'
+                    proximo_str = f'{proxima.data.strftime("%d/%m")} às {hora_fmt}'
 
             return {'disponivel': False, 'proximo_turno': proximo_str}
         except Exception:

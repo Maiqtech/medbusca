@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Search, MapPin, Clock, ArrowLeft, Calendar, Info, ChevronRight, Stethoscope, AlertCircle, CheckCircle2, Navigation, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { municipiosApi, especialidadesApi, upasApi } from '../services/api';
+import { X } from 'lucide-react';
 
 interface CitizenPortalProps {
   onBack: () => void;
@@ -22,6 +23,21 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
   const [isLocating, setIsLocating] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
+  const [upaDetalhe, setUpaDetalhe] = useState<any>(null);
+  const [loadingDetalhe, setLoadingDetalhe] = useState(false);
+
+  const abrirDetalhe = async (upa: any) => {
+    setLoadingDetalhe(true);
+    setUpaDetalhe({ ...upa, especialidades_status: null });
+    try {
+      const data = await upasApi.disponibilidade(upa.id);
+      setUpaDetalhe(data);
+    } catch {
+      setUpaDetalhe(null);
+    } finally {
+      setLoadingDetalhe(false);
+    }
+  };
 
   useEffect(() => {
     Promise.all([municipiosApi.listar(), especialidadesApi.listar()])
@@ -54,12 +70,11 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
   };
 
   const refetchUPAs = useCallback(async () => {
-    if (!selectedEspecialidade || !selectedMunicipio) return;
+    if (!selectedMunicipio) return;
     try {
-      const upas = await upasApi.listar({
-        municipio_id: selectedMunicipio.id,
-        especialidade_id: selectedEspecialidade.id,
-      });
+      const params: any = { municipio_id: selectedMunicipio.id };
+      if (selectedEspecialidade) params.especialidade_id = selectedEspecialidade.id;
+      const upas = await upasApi.listar(params);
       setResults(upas);
       setUltimaAtualizacao(new Date());
     } catch {
@@ -74,14 +89,13 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
   }, [!!results, refetchUPAs]);
 
   const handleSearch = async () => {
-    if (!selectedEspecialidade || !selectedMunicipio) return;
+    if (!selectedMunicipio) return;
     setIsSearching(true);
     setErro(null);
     try {
-      const upas = await upasApi.listar({
-        municipio_id: selectedMunicipio.id,
-        especialidade_id: selectedEspecialidade.id,
-      });
+      const params: any = { municipio_id: selectedMunicipio.id };
+      if (selectedEspecialidade) params.especialidade_id = selectedEspecialidade.id;
+      const upas = await upasApi.listar(params);
       setResults(upas);
       setUltimaAtualizacao(new Date());
     } catch {
@@ -120,7 +134,7 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
             Encontre atendimento disponível
           </h2>
           <p className="text-slate-500 text-sm font-medium">
-            Selecione sua cidade e a especialidade desejada
+            Selecione sua cidade — filtre por especialidade se desejar
           </p>
         </section>
 
@@ -181,7 +195,7 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
                     }}
                     className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-700 font-bold appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
                   >
-                    <option value="">Qual atendimento você busca?</option>
+                    <option value="">Todas as especialidades</option>
                     {especialidades.map(s => (
                       <option key={s.id} value={s.id}>{s.nome}</option>
                     ))}
@@ -195,7 +209,7 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
 
               <button
                 onClick={handleSearch}
-                disabled={!selectedEspecialidade || !selectedMunicipio || isSearching}
+                disabled={!selectedMunicipio || isSearching}
                 className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
               >
                 {isSearching ? (
@@ -246,13 +260,15 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
               {results.length > 0 ? (
                 <div className="grid grid-cols-1 gap-3">
                   {results.map((upa) => {
+                    const semFiltro = upa.status_especialidade === null;
                     const disponivel = upa.status_especialidade?.disponivel;
                     const proximoTurno = upa.status_especialidade?.proximo_turno;
                     return (
                       <motion.div
                         key={upa.id}
-                        className={`bg-white p-5 rounded-[2rem] border transition-all ${
-                          disponivel ? 'border-green-100 shadow-lg shadow-green-50' : 'border-slate-100 opacity-80'
+                        onClick={() => abrirDetalhe(upa)}
+                        className={`bg-white p-5 rounded-[2rem] border transition-all cursor-pointer hover:shadow-md ${
+                          semFiltro ? 'border-slate-100' : disponivel ? 'border-green-100 shadow-lg shadow-green-50' : 'border-slate-100 opacity-80'
                         }`}
                       >
                         <div className="flex justify-between items-start">
@@ -262,6 +278,15 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
                               <MapPin size={12} className="text-slate-300" />
                               {upa.bairro || upa.municipio_nome}
                             </div>
+                            {semFiltro && upa.especialidades?.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {upa.especialidades.map((e: any) => (
+                                  <span key={e.id} className="text-[9px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
+                                    {e.nome}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             {(upa.latitude && upa.longitude) && (
@@ -276,18 +301,20 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
                                 <span className="text-[10px] font-bold hidden sm:inline">Mapa</span>
                               </a>
                             )}
-                            <div className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 ${
-                              disponivel ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-400'
-                            }`}>
-                              {disponivel ? <CheckCircle2 size={14} /> : <Clock size={14} />}
-                              <span className="text-[10px] font-black uppercase tracking-wider">
-                                {disponivel ? 'Disponível agora' : 'Indisponível'}
-                              </span>
-                            </div>
+                            {!semFiltro && (
+                              <div className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 ${
+                                disponivel ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-400'
+                              }`}>
+                                {disponivel ? <CheckCircle2 size={14} /> : <Clock size={14} />}
+                                <span className="text-[10px] font-black uppercase tracking-wider">
+                                  {disponivel ? 'Disponível agora' : 'Indisponível'}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        {!disponivel && proximoTurno && (
+                        {!semFiltro && !disponivel && proximoTurno && (
                           <div className="mt-4 p-3 bg-slate-50 rounded-xl flex items-center gap-3 border border-slate-100">
                             <Calendar size={16} className="text-slate-400" />
                             <p className="text-xs text-slate-600 font-medium">
@@ -296,7 +323,7 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
                           </div>
                         )}
 
-                        {disponivel && (
+                        {!semFiltro && disponivel && (
                           <div className="mt-4 flex items-center gap-2">
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                             <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">
@@ -334,6 +361,59 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
           </p>
         </div>
       </main>
+
+      {/* Modal de detalhe da UPA */}
+      {(upaDetalhe || loadingDetalhe) && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setUpaDetalhe(null)}>
+          <div className="bg-white rounded-[2rem] w-full max-w-md max-h-[80vh] overflow-y-auto p-6 space-y-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="font-black text-slate-800 text-xl">{upaDetalhe?.nome}</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">{upaDetalhe?.bairro}</p>
+              </div>
+              <button onClick={() => setUpaDetalhe(null)} className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-400">
+                <X size={18} />
+              </button>
+            </div>
+
+            {loadingDetalhe ? (
+              <div className="flex items-center justify-center py-8 gap-3 text-slate-400">
+                <Loader2 size={20} className="animate-spin" />
+                <span className="text-sm">Carregando especialidades...</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Especialidades disponíveis</p>
+                {upaDetalhe?.especialidades?.length === 0 && (
+                  <p className="text-sm text-slate-400 text-center py-4">Nenhuma especialidade cadastrada.</p>
+                )}
+                {upaDetalhe?.especialidades?.map((esp: any) => (
+                  <div key={esp.especialidade_id} className={`flex items-center justify-between p-4 rounded-2xl border ${esp.disponivel ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
+                    <div className="flex items-center gap-3">
+                      <Stethoscope size={16} className={esp.disponivel ? 'text-green-500' : 'text-slate-300'} />
+                      <span className="font-bold text-slate-700 text-sm">{esp.especialidade}</span>
+                    </div>
+                    <div className="text-right">
+                      {esp.disponivel ? (
+                        <span className="flex items-center gap-1 text-[10px] font-black text-green-600 uppercase">
+                          <CheckCircle2 size={12} /> Disponível
+                        </span>
+                      ) : esp.proximo_turno ? (
+                        <div className="text-right">
+                          <p className="text-[9px] font-black text-slate-400 uppercase">Próximo</p>
+                          <p className="text-xs font-bold text-slate-600">{esp.proximo_turno}</p>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] font-black text-slate-400 uppercase">Sem agenda</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <footer className="mt-10 pb-10 px-6 text-center">
         <div className="flex items-center justify-center gap-2 mb-2 opacity-30">

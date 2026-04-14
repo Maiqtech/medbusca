@@ -123,6 +123,7 @@ export const upasApi = {
     return apiFetch<any[]>(`/upas/${query}`);
   },
   buscar: (id: number | string) => apiFetch<any>(`/upas/${id}/`),
+  disponibilidade: (id: number | string) => apiFetch<any>(`/upas/${id}/disponibilidade/`),
   criar: (data: any) => apiFetch<any>('/upas/', { method: 'POST', body: JSON.stringify(data) }),
   atualizar: (id: number | string, data: any) => apiFetch<any>(`/upas/${id}/`, { method: 'PUT', body: JSON.stringify(data) }),
 };
