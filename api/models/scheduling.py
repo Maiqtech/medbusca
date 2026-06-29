@@ -12,10 +12,33 @@ class Escala(models.Model):
         on_delete=models.CASCADE,
         related_name="escalas",
     )
+    STATUS_CHOICES = [
+        ("agendada", "Agendada"),
+        ("ativa", "Ativa"),
+        ("cancelada", "Cancelada"),
+        ("concluida", "Concluída"),
+    ]
+
     data = models.DateField()
     hora_inicio = models.TimeField()
     hora_fim = models.TimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="agendada")
     criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    criado_por = models.ForeignKey(
+        "api.Usuario",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="escalas_criadas",
+    )
+    atualizado_por = models.ForeignKey(
+        "api.Usuario",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="escalas_atualizadas",
+    )
 
     class Meta:
         app_label = "api"

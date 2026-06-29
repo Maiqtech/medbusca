@@ -34,7 +34,8 @@ class Medico(models.Model):
         blank=True,
     )
     nome = models.CharField(max_length=200)
-    crm = models.CharField(max_length=20, unique=True)
+    crm = models.CharField(max_length=20)
+    uf = models.CharField(max_length=2, default="")
     especialidade = models.ForeignKey(
         "api.Especialidade",
         on_delete=models.PROTECT,
@@ -46,6 +47,21 @@ class Medico(models.Model):
         related_name="medicos",
     )
     criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    criado_por = models.ForeignKey(
+        "api.Usuario",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="medicos_criados",
+    )
+    atualizado_por = models.ForeignKey(
+        "api.Usuario",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="medicos_atualizados",
+    )
 
     class Meta:
         app_label = "api"
@@ -53,6 +69,7 @@ class Medico(models.Model):
         verbose_name = "Médico"
         verbose_name_plural = "Médicos"
         ordering = ["nome"]
+        unique_together = [("crm", "uf")]
 
     def __str__(self):
         return f"{self.nome} — {self.especialidade.nome}"

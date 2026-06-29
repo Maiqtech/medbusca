@@ -19,11 +19,17 @@ class MunicipioListCreate(generics.ListCreateAPIView):
     def get_queryset(self):
         return list_active_municipios_queryset()
 
+    def perform_create(self, serializer):
+        serializer.save(criado_por=self.request.user)
+
 
 class MunicipioDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Municipio.objects.all()
     serializer_class = MunicipioSerializer
     permission_classes = [IsSuperAdmin]
+
+    def perform_update(self, serializer):
+        serializer.save(atualizado_por=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
         municipio = self.get_object()

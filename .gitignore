@@ -23,3 +23,6 @@ db.sqlite3
 .mcp.json
 
 documentacao
+
+.gitignore
+CLAUDE.md

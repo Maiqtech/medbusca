@@ -29,11 +29,17 @@ class UPAListCreate(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         return Response(serialize_upas_list(request, self.get_queryset()))
 
+    def perform_create(self, serializer):
+        serializer.save(criado_por=self.request.user)
+
 
 class UPADetail(generics.RetrieveUpdateAPIView):
     queryset = UPA.objects.all()
     serializer_class = UPASerializer
     permission_classes = [IsGestorMunicipal]
+
+    def perform_update(self, serializer):
+        serializer.save(atualizado_por=self.request.user)
 
 
 @api_view(["GET"])

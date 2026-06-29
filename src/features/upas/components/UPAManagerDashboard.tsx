@@ -3,7 +3,6 @@ import {
   Users,
   Stethoscope,
   Calendar,
-  AlertTriangle,
   Plus,
   ChevronRight,
   User,
@@ -36,7 +35,6 @@ export default function UPAManagerDashboard({
 }: UPAManagerDashboardProps) {
   const { usuario } = useApp();
   const [medicos, setMedicos] = useState<any[]>([]);
-  const [alertas, setAlertas] = useState<any[]>([]);
   const [turnos, setTurnos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
@@ -186,39 +184,6 @@ export default function UPAManagerDashboard({
           </div>
         </section>
 
-        {alertas.length > 0 && (
-          <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <AlertTriangle size={18} className="text-amber-500" />
-              <h3 className="font-bold text-slate-800">Alertas e Observacoes</h3>
-            </div>
-            <div className="space-y-3">
-              {alertas.slice(0, 4).map(alerta => (
-                <div
-                  key={alerta.id}
-                  className={`p-3 rounded-2xl flex items-start gap-3 border ${
-                    alerta.tipo === 'critico'
-                      ? 'bg-red-50 border-red-100 text-red-700'
-                      : alerta.tipo === 'aviso'
-                        ? 'bg-amber-50 border-amber-100 text-amber-700'
-                        : 'bg-blue-50 border-blue-100 text-blue-700'
-                  }`}
-                >
-                  <div
-                    className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
-                      alerta.tipo === 'critico'
-                        ? 'bg-red-500'
-                        : alerta.tipo === 'aviso'
-                          ? 'bg-amber-500'
-                          : 'bg-blue-500'
-                    }`}
-                  />
-                  <p className="text-xs font-bold leading-tight">{alerta.mensagem}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
 
         <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
           <div className="flex items-center justify-between mb-6">

@@ -10,9 +10,10 @@ interface CitizenPortalProps {
   systemName?: string;
   systemLogo?: string;
   municipality?: string;
+  initialMunicipality?: { name: string; uf: string } | null;
 }
 
-export default function CitizenPortal({ onBack, onMunicipalityChange, systemName = "MedBusca", systemLogo }: CitizenPortalProps) {
+export default function CitizenPortal({ onBack, onMunicipalityChange, systemName = "MedBusca", systemLogo, initialMunicipality }: CitizenPortalProps) {
   const [municipios, setMunicipios] = useState<any[]>([]);
   const [especialidades, setEspecialidades] = useState<any[]>([]);
   const [selectedMunicipio, setSelectedMunicipio] = useState<any>(null);
@@ -45,6 +46,14 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
       .then(([muns, specs]) => {
         setMunicipios(muns);
         setEspecialidades(specs);
+        if (initialMunicipality) {
+          const match = muns.find(
+            (m: any) =>
+              m.nome.toLowerCase() === initialMunicipality.name.toLowerCase() &&
+              m.uf === initialMunicipality.uf
+          );
+          if (match) setSelectedMunicipio(match);
+        }
       })
       .catch(() => setErro('Erro ao carregar dados. Verifique sua conexão.'))
       .finally(() => setIsLoadingData(false));
@@ -153,38 +162,54 @@ export default function CitizenPortal({ onBack, onMunicipalityChange, systemName
             </div>
           ) : (
             <>
-              {/* Município */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center justify-between">
-                  Município
+              {/* Município - Dropdown ou Badge */}
+              {!selectedMunicipio ? (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center justify-between">
+                    Município
+                    <button
+                      type="button"
+                      onClick={detectLocation}
+                      className="text-[9px] text-blue-500 font-bold uppercase hover:underline flex items-center gap-1"
+                      disabled={isLocating}
+                    >
+                      <Navigation size={10} className={isLocating ? 'animate-bounce' : ''} />
+                      {isLocating ? 'Detectando...' : 'Usar localização'}
+                    </button>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedMunicipio?.id || ''}
+                      onChange={(e) => {
+                        const m = municipios.find(m => String(m.id) === e.target.value);
+                        setSelectedMunicipio(m || null);
+                        setResults(null);
+                      }}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-slate-700 font-bold appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all text-sm"
+                    >
+                      <option value="">Selecione o município</option>
+                      {municipios.map(m => (
+                        <option key={m.id} value={m.id}>{m.nome} / {m.uf}</option>
+                      ))}
+                    </select>
+                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500" size={16} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <MapPin size={16} className="text-blue-600" />
+                    <span className="text-sm font-bold text-blue-900">{selectedMunicipio.nome} / {selectedMunicipio.uf}</span>
+                  </div>
                   <button
                     type="button"
-                    onClick={detectLocation}
-                    className="text-[9px] text-blue-500 font-bold uppercase hover:underline flex items-center gap-1"
-                    disabled={isLocating}
+                    onClick={() => setSelectedMunicipio(null)}
+                    className="text-xs text-blue-600 font-bold uppercase hover:underline"
                   >
-                    <Navigation size={10} className={isLocating ? 'animate-bounce' : ''} />
-                    {isLocating ? 'Detectando...' : 'Usar localização'}
+                    Alterar
                   </button>
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedMunicipio?.id || ''}
-                    onChange={(e) => {
-                      const m = municipios.find(m => String(m.id) === e.target.value);
-                      setSelectedMunicipio(m || null);
-                      setResults(null);
-                    }}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-slate-700 font-bold appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all text-sm"
-                  >
-                    <option value="">Selecione o município</option>
-                    {municipios.map(m => (
-                      <option key={m.id} value={m.id}>{m.nome} / {m.uf}</option>
-                    ))}
-                  </select>
-                  <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500" size={16} />
                 </div>
-              </div>
+              )}
 
               {/* Especialidade */}
               <div className="space-y-2">

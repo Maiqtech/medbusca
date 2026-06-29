@@ -172,11 +172,6 @@ export const turnosApi = {
     apiFetch<any>('/turnos/encerrar/', { method: 'POST', body: JSON.stringify(data || {}) }),
 };
 
-export const alertasApi = {
-  listar: () => apiFetch<any[]>('/alertas/'),
-  resolver: (id: number | string) => apiFetch<any>(`/alertas/${id}/resolver/`, { method: 'PUT' }),
-};
-
 export const relatoriosApi = {
   upa: (upa_id: number | string, mes?: string) => {
     const query = mes ? `?mes=${mes}` : '';

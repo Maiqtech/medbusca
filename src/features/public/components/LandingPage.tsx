@@ -1,4 +1,4 @@
-import { Search, ShieldCheck, MapPin, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Search, User, Stethoscope, MapPin, ChevronRight, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 
@@ -69,11 +69,11 @@ export default function LandingPage({ onSelectRole, systemName = "MedBusca", sys
                   className="group bg-white p-8 rounded-3xl border-2 border-transparent hover:border-blue-600 shadow-xl shadow-slate-200 transition-all text-left flex flex-col gap-6 relative overflow-hidden select-none active:bg-slate-50"
                 >
                   <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <Search size={120} className="text-blue-600" />
+                    <User size={120} className="text-blue-600" />
                   </div>
-                  
+
                   <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors shadow-inner">
-                    <Search size={32} />
+                    <User size={32} />
                   </div>
                   
                   <div className="flex-1">
@@ -96,11 +96,14 @@ export default function LandingPage({ onSelectRole, systemName = "MedBusca", sys
                   className="group bg-white p-8 rounded-3xl border-2 border-transparent hover:border-emerald-600 shadow-xl shadow-slate-200 transition-all text-left flex flex-col gap-6 relative overflow-hidden select-none active:bg-slate-50"
                 >
                   <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <ShieldCheck size={120} className="text-emerald-600" />
+                    <Stethoscope size={120} className="text-emerald-600" />
                   </div>
 
-                  <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors shadow-inner">
-                    <ShieldCheck size={32} />
+                  <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors shadow-inner relative">
+                    <User size={30} />
+                    <div className="absolute bottom-1.5 right-1.5 w-5 h-5 bg-emerald-600 group-hover:bg-white rounded-full flex items-center justify-center transition-colors">
+                      <Stethoscope size={11} className="text-white group-hover:text-emerald-600 transition-colors" />
+                    </div>
                   </div>
                   
                   <div className="flex-1">
@@ -173,7 +176,7 @@ export default function LandingPage({ onSelectRole, systemName = "MedBusca", sys
                             )}
                           </div>
                           <div>
-                            <p className="font-extrabold text-slate-800 text-lg">{muni.name}</p>
+                            <p className="font-extrabold text-slate-800 text-lg">{muni.nome}</p>
                             <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">{muni.uf}</p>
                           </div>
                         </div>

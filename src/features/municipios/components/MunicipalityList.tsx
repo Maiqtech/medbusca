@@ -3,26 +3,33 @@ import { Search, MapPin, Building2, Users, ChevronRight, Plus, Loader2, AlertCir
 import { motion } from 'motion/react';
 import DashboardHeader from '../../../components/DashboardHeader';
 import { municipiosApi } from '../../../services/api';
+import MunicipalityEditModal from './MunicipalityEditModal';
 
 interface MunicipalityListProps {
   onBack: () => void;
   onAdd: () => void;
   onSelect?: (municipio: any) => void;
+  onAddManager?: (municipioId: number | string, municipioNome: string) => void;
   userName: string;
   onLogout: () => void;
 }
 
-export default function MunicipalityList({ onBack, onAdd, onSelect, userName, onLogout }: MunicipalityListProps) {
+export default function MunicipalityList({ onBack, onAdd, onSelect, onAddManager, userName, onLogout }: MunicipalityListProps) {
   const [municipios, setMunicipios] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [editingMunicipio, setEditingMunicipio] = useState<any | null>(null);
 
-  useEffect(() => {
+  const fetchMunicipios = () => {
     municipiosApi.listar()
       .then(setMunicipios)
       .catch(() => setErro('Erro ao carregar municípios.'))
       .finally(() => setIsLoading(false));
+  };
+
+  useEffect(() => {
+    fetchMunicipios();
   }, []);
 
   const filtered = municipios.filter(m =>
@@ -102,8 +109,8 @@ export default function MunicipalityList({ onBack, onAdd, onSelect, userName, on
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      onClick={() => onSelect?.(city)}
-                      className={`bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group flex items-center justify-between ${onSelect ? 'cursor-pointer' : ''}`}
+                      onClick={() => setEditingMunicipio(city)}
+                      className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group flex items-center justify-between cursor-pointer"
                     >
                       <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
@@ -146,6 +153,13 @@ export default function MunicipalityList({ onBack, onAdd, onSelect, userName, on
           </div>
         )}
       </main>
+
+      <MunicipalityEditModal
+        municipio={editingMunicipio}
+        onClose={() => setEditingMunicipio(null)}
+        onUpdated={fetchMunicipios}
+        onAddManager={onAddManager}
+      />
     </div>
   );
 }

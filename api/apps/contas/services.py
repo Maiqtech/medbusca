@@ -21,9 +21,13 @@ def get_activation_token_or_raise(token):
 
 def get_activation_token_data(token):
     activation_token = get_activation_token_or_raise(token)
+    email = activation_token.usuario.email
+    # Remove o prefixo de inativo se existir
+    if email.startswith("__inativo_"):
+        email = email.split("__", 2)[-1]
     return TokenAtivacaoDTO(
         nome=activation_token.usuario.nome,
-        email=activation_token.usuario.email,
+        email=email,
     ).to_dict()
 
 
@@ -34,8 +38,13 @@ def activate_account(token, senha):
         raise ValueError("A senha deve ter pelo menos 6 caracteres.")
 
     activation_token = get_activation_token_or_raise(token)
-    activation_token.usuario.set_password(senha)
-    activation_token.usuario.save()
+    usuario = activation_token.usuario
+    usuario.set_password(senha)
+    usuario.is_active = True
+    # Remove o prefixo de inativo se existir
+    if usuario.email.startswith("__inativo_"):
+        usuario.email = usuario.email.split("__", 2)[-1]
+    usuario.save()
     activation_token.usado = True
     activation_token.save()
     return {"mensagem": "Senha criada com sucesso! Você já pode fazer login."}

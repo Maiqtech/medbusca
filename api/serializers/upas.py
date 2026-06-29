@@ -12,6 +12,8 @@ class UPASerializer(serializers.ModelSerializer):
     em_atendimento = serializers.SerializerMethodField()
     em_pausa = serializers.SerializerMethodField()
     encerrados = serializers.SerializerMethodField()
+    criado_por_nome = serializers.CharField(source="criado_por.nome", read_only=True, default=None)
+    atualizado_por_nome = serializers.CharField(source="atualizado_por.nome", read_only=True, default=None)
 
     class Meta:
         model = UPA
@@ -28,12 +30,15 @@ class UPASerializer(serializers.ModelSerializer):
             "especialidades",
             "ativa",
             "criado_em",
+            "atualizado_em",
+            "criado_por_nome",
+            "atualizado_por_nome",
             "total_medicos",
             "em_atendimento",
             "em_pausa",
             "encerrados",
         ]
-        read_only_fields = ["id", "criado_em"]
+        read_only_fields = ["id", "criado_em", "atualizado_em"]
 
     def get_especialidades(self, obj):
         esp_ids = obj.medicos.values_list("especialidade_id", flat=True).distinct()

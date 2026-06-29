@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  Search, MapPin, Users, Hospital, Stethoscope, PlusCircle, ChevronRight,
-  AlertTriangle, LayoutDashboard, Settings, Loader2
+  MapPin, Users, Hospital, Stethoscope, PlusCircle, ChevronRight,
+  LayoutDashboard, Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import DashboardHeader from '../../../components/DashboardHeader';
@@ -153,13 +153,6 @@ export default function SuperAdminDashboard({ userName, onLogout, onNavigate, sy
             </div>
           </section>
 
-          {/* Alerts placeholder — endpoint removido */}
-          <section className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Alertas do Sistema</h3>
-            <div className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700 text-xs font-bold">
-              Nenhum alerta ativo no momento.
-            </div>
-          </section>
         </div>
       </main>
 
@@ -177,9 +170,9 @@ export default function SuperAdminDashboard({ userName, onLogout, onNavigate, sy
           <Users size={24} />
           <span className="text-[10px] font-bold">Gestores</span>
         </button>
-        <button onClick={() => onNavigate('settings')} className="flex flex-col items-center gap-1 text-slate-400">
-          <Settings size={24} />
-          <span className="text-[10px] font-bold">Ajustes</span>
+        <button onClick={() => onNavigate('register_municipal_manager')} className="flex flex-col items-center gap-1 text-slate-400">
+          <PlusCircle size={24} />
+          <span className="text-[10px] font-bold">Novo Gestor</span>
         </button>
       </nav>
     </div>

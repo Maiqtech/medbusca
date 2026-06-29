@@ -8,6 +8,8 @@ class MunicipioSerializer(serializers.ModelSerializer):
     total_gestores = serializers.SerializerMethodField()
     total_medicos = serializers.SerializerMethodField()
     unidades_ativas = serializers.SerializerMethodField()
+    criado_por_nome = serializers.CharField(source="criado_por.nome", read_only=True, default=None)
+    atualizado_por_nome = serializers.CharField(source="atualizado_por.nome", read_only=True, default=None)
 
     class Meta:
         model = Municipio
@@ -18,12 +20,15 @@ class MunicipioSerializer(serializers.ModelSerializer):
             "logo_url",
             "ativo",
             "criado_em",
+            "atualizado_em",
+            "criado_por_nome",
+            "atualizado_por_nome",
             "total_upas",
             "total_gestores",
             "total_medicos",
             "unidades_ativas",
         ]
-        read_only_fields = ["id", "criado_em"]
+        read_only_fields = ["id", "criado_em", "atualizado_em"]
 
     def get_total_upas(self, obj):
         return obj.upas.count()

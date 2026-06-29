@@ -1,9 +1,13 @@
 import { useState, FormEvent } from 'react';
-import { Search, Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, Mail, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
 import { passwordApi } from '../../../services/api';
 
-export default function EsqueciSenha() {
+interface EsqueciSenhaProps {
+  onBack?: () => void;
+}
+
+export default function EsqueciSenha({ onBack }: EsqueciSenhaProps) {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -95,6 +99,18 @@ export default function EsqueciSenha() {
                   <><Mail size={20} /><span>Enviar link</span></>
                 )}
               </button>
+
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  disabled={isLoading}
+                  className="w-full py-3 text-slate-500 font-medium text-sm flex items-center justify-center gap-2 hover:text-slate-700 transition-colors"
+                >
+                  <ArrowLeft size={16} />
+                  Voltar ao login
+                </button>
+              )}
             </form>
           </div>
         )}

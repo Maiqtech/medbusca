@@ -13,6 +13,9 @@ class EscalaListCreate(generics.ListCreateAPIView):
     def get_queryset(self):
         return get_escalas_queryset(self.request)
 
+    def perform_create(self, serializer):
+        serializer.save(criado_por=self.request.user)
+
 
 class EscalaDelete(generics.DestroyAPIView):
     queryset = Escala.objects.all()

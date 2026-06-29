@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from './app/providers/AppContext';
 import AtivarConta from './features/auth/components/AtivarConta';
 import EsqueciSenha from './features/auth/components/EsqueciSenha';
@@ -29,63 +29,13 @@ import ScheduleRegistration from './features/escalas/components/ScheduleRegistra
 import ScheduleList from './features/escalas/components/ScheduleList';
 import ShiftMonitoring from './features/escalas/components/ShiftMonitoring';
 import PlaceholderPage from './shared/components/PlaceholderPage';
+import { municipiosApi } from './shared/services/api';
 
 type View = 'landing' | 'citizen' | 'login' | 'doctor' | 'manager' | 'admin' | 'register_municipality' | string;
 
-const MOCK_MUNICIPALITIES = [
-  { 
-    id: 'salvador', 
-    name: 'Salvador', 
-    uf: 'BA', 
-    systemName: 'MedBusca Salvador', 
-    logo: 'https://salvador.ba.gov.br/wp-content/uploads/2021/04/logo-prefeitura-salvador.png' 
-  },
-  { 
-    id: 'feira', 
-    name: 'Feira de Santana', 
-    uf: 'BA', 
-    systemName: 'MedBusca Feira', 
-    logo: 'https://www.feiradesantana.ba.gov.br/servicos/arquivos/logo_prefeitura_feira.png' 
-  },
-  { 
-    id: 'vitoria', 
-    name: 'Vitória da Conquista', 
-    uf: 'BA', 
-    systemName: 'MedBusca Conquista', 
-    logo: 'https://www.pmvc.ba.gov.br/wp-content/uploads/logo-pmvc.png' 
-  },
-  {
-    id: 'camacari',
-    name: 'Camaçari',
-    uf: 'BA',
-    systemName: 'MedBusca Camaçari',
-    logo: 'https://www.camacari.ba.gov.br/wp-content/uploads/2021/03/logo-prefeitura-camacari.png'
-  },
-  {
-    id: 'itabuna',
-    name: 'Itabuna',
-    uf: 'BA',
-    systemName: 'MedBusca Itabuna',
-    logo: 'https://itabuna.ba.gov.br/wp-content/uploads/2021/01/logo-itabuna.png'
-  },
-  {
-    id: 'aracaju',
-    name: 'Aracaju',
-    uf: 'SE',
-    systemName: 'MedBusca Aracaju',
-    logo: 'https://www.aracaju.se.gov.br/portal/images/logo_aracaju.png'
-  },
-  {
-    id: 'maceio',
-    name: 'Maceió',
-    uf: 'AL',
-    systemName: 'MedBusca Maceió',
-    logo: 'https://maceio.al.gov.br/uploads/imagens/logo-maceio.png'
-  }
-];
-
 export default function App() {
   const { usuario } = useApp();
+  const [municipalities, setMunicipalities] = useState<any[]>([]);
   // Detecta link de ativação de conta (?token=xxx)
   const tokenAtivacao = new URLSearchParams(window.location.search).get('token');
   if (tokenAtivacao) {
@@ -109,11 +59,16 @@ export default function App() {
 
   const [currentView, setCurrentView] = useState<View>('landing');
   const [selectedMunicipio, setSelectedMunicipio] = useState<any>(null);
+  const [selectedCitizenMunicipality, setSelectedCitizenMunicipality] = useState<{ name: string; uf: string } | null>(null);
   const [systemConfig, setSystemConfig] = useState({
     name: 'MedBusca',
     logo: '',
     municipality: 'Salvador'
   });
+
+  useEffect(() => {
+    municipiosApi.listar().then(setMunicipalities).catch(() => setMunicipalities([]));
+  }, []);
 
   const handleSelectRole = (role: 'citizen' | 'professional', municipalityData?: any) => {
     if (role === 'professional') {
@@ -121,10 +76,11 @@ export default function App() {
     } else {
       if (municipalityData) {
         setSystemConfig({
-          name: municipalityData.systemName,
+          name: `MedBusca ${municipalityData.nome}`,
           logo: municipalityData.logo,
-          municipality: `${municipalityData.name}-${municipalityData.uf}`
+          municipality: `${municipalityData.nome}-${municipalityData.uf}`
         });
+        setSelectedCitizenMunicipality({ name: municipalityData.nome, uf: municipalityData.uf });
       }
       setCurrentView('citizen');
     }
@@ -150,15 +106,14 @@ export default function App() {
   };
 
   const handleMunicipalityChange = (data: { name: string, uf: string }) => {
-    const muni = MOCK_MUNICIPALITIES.find(m => m.name === data.name && m.uf === data.uf);
+    const muni = municipalities.find(m => m.nome === data.name && m.uf === data.uf);
     if (muni) {
       setSystemConfig({
-        name: muni.systemName,
+        name: `MedBusca ${muni.nome}`,
         logo: muni.logo,
-        municipality: `${muni.name}-${muni.uf}`
+        municipality: `${muni.nome}-${muni.uf}`
       });
     } else {
-      // Fallback if not in mock list
       setSystemConfig(prev => ({
         ...prev,
         name: `MedBusca ${data.name}`,
@@ -181,22 +136,23 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50">
       {currentView === 'landing' && (
-        <LandingPage 
-          onSelectRole={handleSelectRole} 
-          systemName={systemConfig.name} 
-          systemLogo={systemConfig.logo} 
-          municipality={systemConfig.municipality} 
-          municipalities={MOCK_MUNICIPALITIES}
+        <LandingPage
+          onSelectRole={handleSelectRole}
+          systemName={systemConfig.name}
+          systemLogo={systemConfig.logo}
+          municipality={systemConfig.municipality}
+          municipalities={municipalities}
         />
       )}
       
       {currentView === 'citizen' && (
-        <CitizenPortal 
-          onBack={handleBack} 
+        <CitizenPortal
+          onBack={handleBack}
           onMunicipalityChange={handleMunicipalityChange}
           systemName={systemConfig.name}
           systemLogo={systemConfig.logo}
           municipality={systemConfig.municipality}
+          initialMunicipality={selectedCitizenMunicipality}
         />
       )}
       
@@ -211,7 +167,7 @@ export default function App() {
       )}
 
       {currentView === 'esqueci_senha' && (
-        <EsqueciSenha />
+        <EsqueciSenha onBack={() => setCurrentView('login')} />
       )}
 
       {currentView === 'redefinir_senha' && (
@@ -267,6 +223,10 @@ export default function App() {
           onBack={() => setCurrentView('admin')}
           onAdd={() => setCurrentView('register_municipality')}
           onSelect={(m) => { setSelectedMunicipio(m); setCurrentView('list_municipal_managers'); }}
+          onAddManager={(municipioId, municipioNome) => {
+            setSelectedMunicipio({ id: municipioId, nome: municipioNome });
+            setCurrentView('register_municipal_manager');
+          }}
           userName={usuario?.nome ?? ''}
           onLogout={handleBack}
         />

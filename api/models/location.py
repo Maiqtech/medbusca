@@ -7,6 +7,21 @@ class Municipio(models.Model):
     logo_url = models.URLField(blank=True, null=True)
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    criado_por = models.ForeignKey(
+        "api.Usuario",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="municipios_criados",
+    )
+    atualizado_por = models.ForeignKey(
+        "api.Usuario",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="municipios_atualizados",
+    )
 
     class Meta:
         app_label = "api"
@@ -37,6 +52,21 @@ class UPA(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     ativa = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    criado_por = models.ForeignKey(
+        "api.Usuario",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="upas_criadas",
+    )
+    atualizado_por = models.ForeignKey(
+        "api.Usuario",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="upas_atualizadas",
+    )
 
     class Meta:
         app_label = "api"

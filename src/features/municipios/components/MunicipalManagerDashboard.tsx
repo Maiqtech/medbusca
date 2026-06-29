@@ -162,13 +162,6 @@ export default function MunicipalManagerDashboard({
             </div>
           </section>
 
-          {/* Alerts placeholder */}
-          <section className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Alertas do Município</h3>
-            <div className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700 text-xs font-bold">
-              Nenhum alerta ativo.
-            </div>
-          </section>
         </div>
       </main>
 

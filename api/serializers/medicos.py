@@ -13,6 +13,8 @@ class MedicoSerializer(serializers.ModelSerializer):
     upa_nome = serializers.CharField(source="upa.nome", read_only=True)
     status_turno = serializers.SerializerMethodField()
     turno_iniciado_em = serializers.SerializerMethodField()
+    criado_por_nome = serializers.CharField(source="criado_por.nome", read_only=True, default=None)
+    atualizado_por_nome = serializers.CharField(source="atualizado_por.nome", read_only=True, default=None)
 
     class Meta:
         model = Medico
@@ -20,15 +22,19 @@ class MedicoSerializer(serializers.ModelSerializer):
             "id",
             "nome",
             "crm",
+            "uf",
             "especialidade",
             "especialidade_nome",
             "upa",
             "upa_nome",
             "criado_em",
+            "atualizado_em",
+            "criado_por_nome",
+            "atualizado_por_nome",
             "status_turno",
             "turno_iniciado_em",
         ]
-        read_only_fields = ["id", "criado_em"]
+        read_only_fields = ["id", "criado_em", "atualizado_em"]
 
     def get_status_turno(self, obj):
         turno = obj.turno_atual
@@ -45,12 +51,14 @@ class MedicoCriarSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Medico
-        fields = ["nome", "crm", "especialidade", "upa", "email", "senha"]
+        fields = ["nome", "crm", "uf", "especialidade", "upa", "email", "senha"]
 
-    def validate_crm(self, value):
-        if Medico.objects.filter(crm=value).exists():
-            raise serializers.ValidationError("CRM já cadastrado.")
-        return value
+    def validate(self, attrs):
+        crm = attrs.get("crm", "")
+        uf = attrs.get("uf", "")
+        if Medico.objects.filter(crm=crm, uf=uf).exists():
+            raise serializers.ValidationError({"crm": "CRM já cadastrado para este estado."})
+        return attrs
 
     def create(self, validated_data):
         email = validated_data.pop("email", None)

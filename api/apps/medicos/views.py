@@ -21,7 +21,7 @@ class MedicoListCreate(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = MedicoCriarSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        medico = serializer.save()
+        medico = serializer.save(criado_por=request.user)
         return Response(MedicoSerializer(medico).data, status=status.HTTP_201_CREATED)
 
 

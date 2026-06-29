@@ -1,11 +1,26 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { Search, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Lock } from 'lucide-react';
+import { Search, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Lock, Check, X } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface AtivarContaProps {
   token: string;
   onSuccess: () => void;
 }
+
+const getPasswordStrength = (pwd: string) => {
+  if (!pwd) return { score: 0, label: '', color: 'bg-slate-200' };
+  let score = 0;
+  if (pwd.length >= 6) score++;
+  if (pwd.length >= 10) score++;
+  if (/[A-Z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  if (/[!@#$%^&*]/.test(pwd)) score++;
+
+  if (score <= 1) return { score: 1, label: 'Fraca', color: 'bg-red-500' };
+  if (score <= 2) return { score: 2, label: 'Regular', color: 'bg-amber-500' };
+  if (score <= 3) return { score: 3, label: 'Boa', color: 'bg-blue-500' };
+  return { score: 4, label: 'Forte', color: 'bg-green-500' };
+};
 
 export default function AtivarConta({ token, onSuccess }: AtivarContaProps) {
   const [info, setInfo] = useState<{ nome: string; email: string } | null>(null);
@@ -16,6 +31,12 @@ export default function AtivarConta({ token, onSuccess }: AtivarContaProps) {
   const [isVerificando, setIsVerificando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
+
+  const strength = getPasswordStrength(senha);
+  const temMaiuscula = /[A-Z]/.test(senha);
+  const temNumero = /[0-9]/.test(senha);
+  const temEspecial = /[!@#$%^&*]/.test(senha);
+  const temTamanho = senha.length >= 6;
 
   useEffect(() => {
     fetch(`http://localhost:8000/api/ativar/${token}/`)
@@ -128,6 +149,65 @@ export default function AtivarConta({ token, onSuccess }: AtivarContaProps) {
                     {showSenha ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+
+                {senha && (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-600">Força: {strength.label}</span>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4].map(i => (
+                          <div
+                            key={i}
+                            className={`w-1.5 h-1.5 rounded-full ${i <= strength.score ? strength.color : 'bg-slate-200'}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        {temTamanho ? (
+                          <Check size={14} className="text-green-600" />
+                        ) : (
+                          <X size={14} className="text-slate-300" />
+                        )}
+                        <span className={temTamanho ? 'text-green-700 font-medium' : 'text-slate-500'}>
+                          Mínimo 6 caracteres
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {temMaiuscula ? (
+                          <Check size={14} className="text-green-600" />
+                        ) : (
+                          <X size={14} className="text-slate-300" />
+                        )}
+                        <span className={temMaiuscula ? 'text-green-700 font-medium' : 'text-slate-500'}>
+                          Letra maiúscula (A-Z)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {temNumero ? (
+                          <Check size={14} className="text-green-600" />
+                        ) : (
+                          <X size={14} className="text-slate-300" />
+                        )}
+                        <span className={temNumero ? 'text-green-700 font-medium' : 'text-slate-500'}>
+                          Número (0-9)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {temEspecial ? (
+                          <Check size={14} className="text-green-600" />
+                        ) : (
+                          <X size={14} className="text-slate-300" />
+                        )}
+                        <span className={temEspecial ? 'text-green-700 font-medium' : 'text-slate-500'}>
+                          Caractere especial (!@#$%^&*)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>

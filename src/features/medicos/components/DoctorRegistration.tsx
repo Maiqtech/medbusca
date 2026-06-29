@@ -1,8 +1,9 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { UserPlus, Mail, Save, AlertCircle, Stethoscope, Hash, CheckCircle2, Loader2, X, Info } from 'lucide-react';
+
 import { motion, AnimatePresence } from 'motion/react';
 import DashboardHeader from '../../../components/DashboardHeader';
-import { medicosApi, especialidadesApi, upasApi } from '../../../services/api';
+import { especialidadesApi, upasApi, medicosApi } from '../../../services/api';
 import { useApp } from '../../../store/AppContext';
 
 interface DoctorRegistrationProps {
@@ -16,7 +17,7 @@ interface DoctorRegistrationProps {
 export default function DoctorRegistration({ onBack, onSuccess, userName, onLogout, upaName }: DoctorRegistrationProps) {
   const { usuario } = useApp();
   const [formData, setFormData] = useState({
-    nome: '', crm: '', especialidade: '', upa: '', email: ''
+    nome: '', crm: '', uf: '', especialidade: '', upa: '', email: ''
   });
   const [especialidades, setEspecialidades] = useState<any[]>([]);
   const [upas, setUpas] = useState<any[]>([]);
@@ -24,7 +25,6 @@ export default function DoctorRegistration({ onBack, onSuccess, userName, onLogo
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
-
   useEffect(() => {
     Promise.all([
       especialidadesApi.listar(),
@@ -43,8 +43,8 @@ export default function DoctorRegistration({ onBack, onSuccess, userName, onLogo
     e.preventDefault();
     setErro(null);
 
-    if (!formData.nome.trim() || !formData.crm.trim() || !formData.especialidade || !formData.upa) {
-      setErro('Nome, CRM, Especialidade e UPA são obrigatórios.');
+    if (!formData.nome.trim() || !formData.crm.trim() || !formData.uf || !formData.especialidade || !formData.upa) {
+      setErro('Nome, CRM, UF, Especialidade e UPA são obrigatórios.');
       return;
     }
 
@@ -53,6 +53,7 @@ export default function DoctorRegistration({ onBack, onSuccess, userName, onLogo
       await medicosApi.criar({
         nome: formData.nome.trim(),
         crm: formData.crm.trim(),
+        uf: formData.uf,
         especialidade: Number(formData.especialidade),
         upa: Number(formData.upa),
         email: formData.email.trim() || undefined,
@@ -111,19 +112,35 @@ export default function DoctorRegistration({ onBack, onSuccess, userName, onLogo
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_90px_1fr] gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-1">CRM *</label>
                     <div className="relative">
                       <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                       <input
-                        required type="text" placeholder="00000-BA"
+                        required type="text" placeholder="00000"
                         className="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                         value={formData.crm}
                         onChange={e => setFormData({ ...formData, crm: e.target.value })}
                         disabled={isLoading || isSuccess}
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">UF *</label>
+                    <select
+                      required
+                      className="w-full px-3 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none font-bold text-slate-700 text-center"
+                      value={formData.uf}
+                      onChange={e => setFormData({ ...formData, uf: e.target.value })}
+                      disabled={isLoading || isSuccess}
+                    >
+                      <option value="">--</option>
+                      {['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'].map(uf => (
+                        <option key={uf} value={uf}>{uf}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="space-y-2">
